@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>検索結果</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 2em auto; padding: 0 1em; background-color: #f9f9f9; }
+        .result-item { background-color: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 1.5em; margin-bottom: 1.5em; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .recipe-details { display: grid; grid-template-columns: 1fr 2fr; gap: 2em; margin-top: 1em; }
+        h1, h2 { color: #333; }
+        h2 { color: #d63384; }
+        h3 { border-bottom: 2px solid #eee; padding-bottom: 0.3em; color: #555;}
+        ul, ol { padding-left: 20px; margin-top: 0.5em; }
+        li { margin-bottom: 0.7em; line-height: 1.6; }
+        a { text-decoration: none; color: #007BFF; }
+        a:hover { text-decoration: underline; }
+        .controls { margin-bottom: 1em; }
+        .toggle-button { padding: 8px 16px; border: 1px solid #007BFF; background-color: #fff; color: #007BFF; border-radius: 5px; cursor: pointer; transition: all 0.2s; }
+        .toggle-button:hover { background-color: #007BFF; color: #fff; }
+        .ingredient-category {
+            font-size: 0.9em;
+            font-weight: bold;
+            color: #666;
+            margin-top: 1.2em;
+            margin-bottom: 0.5em;
+            border-left: 4px solid #d63384;
+            padding-left: 8px;
+        }
+        .ingredient-category:first-child {
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>検索結果: "{{ query }}"</h1>
+    <p><a href="/">← 新しい検索に戻る</a></p>
+
+    {% if recipes %}
+        <p>{{ recipes|length }}件のレシピが見つかりました。</p>
+        <div class="controls">
+            <button id="toggle-name-btn" class="toggle-button" data-state="original">正規化名で表示</button>
+        </div>
+        
+        {% for recipe in recipes %}
+            <div class="result-item">
+                <h2>{{ recipe.title }}</h2>
+                <p>{{ recipe.description }}</p>
+                <div class="recipe-details">
+                    <div>
+                        <h3>材料</h3>
+                        {% for category, ingredients in recipe.grouped_ingredients.items() %}
+                            <div class="ingredient-category">{{ category }}</div>
+                            <ul>
+                                {% for ingredient in ingredients %}
+                                    <li class="ingredient-item" 
+                                        data-original="{{ ingredient.original_name }}" 
+                                        data-normalized="{{ ingredient.normalized_name or '(データがNULLです)' }}">
+                                        <span class="ingredient-name">{{ ingredient.original_name }}</span>: {{ ingredient.quantity }}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p>材料情報が登録されていません。</p>
+                        {% endfor %}
+                    </div>
+                    <div>
+                        <h3>作り方</h3>
+                        <ol>
+                            {% for step in recipe.steps %}
+                                <li>{{ step.memo }}</li>
+                            {% else %}
+                                <li>手順情報が登録されていません。</li>
+                            {% endfor %}
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>該当するレシピは見つかりませんでした。</p>
+    {% endif %}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const toggleBtn = document.getElementById('toggle-name-btn');
+            if (!toggleBtn) return;
+
+            toggleBtn.addEventListener('click', () => {
+                const currentState = toggleBtn.dataset.state;
+                const ingredientItems = document.querySelectorAll('.ingredient-item');
+
+                if (currentState === 'original') {
+                    ingredientItems.forEach(item => {
+                        const nameSpan = item.querySelector('.ingredient-name');
+                        if(nameSpan) { nameSpan.textContent = item.dataset.normalized; }
+                    });
+                    toggleBtn.dataset.state = 'normalized';
+                    toggleBtn.textContent = '元の名前で表示';
+                } else {
+                    ingredientItems.forEach(item => {
+                        const nameSpan = item.querySelector('.ingredient-name');
+                        if(nameSpan) { nameSpan.textContent = item.dataset.original; }
+                    });
+                    toggleBtn.dataset.state = 'original';
+                    toggleBtn.textContent = '正規化名で表示';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
