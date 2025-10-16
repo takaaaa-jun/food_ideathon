@@ -14,54 +14,59 @@
         li { margin-bottom: 0.7em; line-height: 1.6; }
         a { text-decoration: none; color: #007BFF; }
         a:hover { text-decoration: underline; }
-        .controls { margin-bottom: 1em; }
-        .toggle-button { padding: 8px 16px; border: 1px solid #007BFF; background-color: #fff; color: #007BFF; border-radius: 5px; cursor: pointer; transition: all 0.2s; }
-        .toggle-button:hover { background-color: #007BFF; color: #fff; }
-        .ingredient-category {
+        .recipe-meta {
+            margin-top: 0.5em;
+            margin-bottom: 1em;
+            color: #555;
             font-size: 0.9em;
-            font-weight: bold;
-            color: #666;
-            margin-top: 1.2em;
-            margin-bottom: 0.5em;
-            border-left: 4px solid #d63384;
-            padding-left: 8px;
         }
-        .ingredient-category:first-child {
-            margin-top: 0;
+        .recipe-meta span {
+            margin-right: 1.5em;
         }
+        .recipe-meta span::before {
+            display: inline-block;
+            margin-right: 0.5em;
+            vertical-align: middle;
+        }
+        .time-icon::before { content: '🕒'; }
+        .serving-icon::before { content: '👥'; }
     </style>
 </head>
 <body>
     <h1>検索結果: "{{ query }}"</h1>
     <p><a href="/">← 新しい検索に戻る</a></p>
 
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+
     {% if recipes %}
         <p>{{ recipes|length }}件のレシピが見つかりました。</p>
-        <div class="controls">
-            <button id="toggle-name-btn" class="toggle-button" data-state="original">正規化名で表示</button>
-        </div>
         
         {% for recipe in recipes %}
             <div class="result-item">
                 <h2>{{ recipe.title }}</h2>
+
+                <div class="recipe-meta">
+                    {% if recipe.cooking_time %}
+                        <span class="time-icon">{{ recipe.cooking_time }}</span>
+                    {% endif %}
+                    {% if recipe.serving_for %}
+                        <span class="serving-icon">{{ recipe.serving_for }}</span>
+                    {% endif %}
+                </div>
+
                 <p>{{ recipe.description }}</p>
                 <div class="recipe-details">
                     <div>
                         <h3>材料</h3>
-                        {% for category, ingredients in recipe.grouped_ingredients.items() %}
-                            <div class="ingredient-category">{{ category }}</div>
-                            <ul>
-                                {% for ingredient in ingredients %}
-                                    <li class="ingredient-item" 
-                                        data-original="{{ ingredient.original_name }}" 
-                                        data-normalized="{{ ingredient.normalized_name or '(データがNULLです)' }}">
-                                        <span class="ingredient-name">{{ ingredient.original_name }}</span>: {{ ingredient.quantity }}
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        {% else %}
-                            <p>材料情報が登録されていません。</p>
-                        {% endfor %}
+                        <ul>
+                            {% for ingredient in recipe.ingredients %}
+                                <li>{{ ingredient.name }}: {{ ingredient.quantity }}</li>
+                            {% else %}
+                                <li>材料情報が登録されていません。</li>
+                            {% endfor %}
+                        </ul>
                     </div>
                     <div>
                         <h3>作り方</h3>
@@ -76,36 +81,9 @@
                 </div>
             </div>
         {% endfor %}
-    {% else %}
+    {% elif query and not error %}
         <p>該当するレシピは見つかりませんでした。</p>
     {% endif %}
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const toggleBtn = document.getElementById('toggle-name-btn');
-            if (!toggleBtn) return;
-
-            toggleBtn.addEventListener('click', () => {
-                const currentState = toggleBtn.dataset.state;
-                const ingredientItems = document.querySelectorAll('.ingredient-item');
-
-                if (currentState === 'original') {
-                    ingredientItems.forEach(item => {
-                        const nameSpan = item.querySelector('.ingredient-name');
-                        if(nameSpan) { nameSpan.textContent = item.dataset.normalized; }
-                    });
-                    toggleBtn.dataset.state = 'normalized';
-                    toggleBtn.textContent = '元の名前で表示';
-                } else {
-                    ingredientItems.forEach(item => {
-                        const nameSpan = item.querySelector('.ingredient-name');
-                        if(nameSpan) { nameSpan.textContent = item.dataset.original; }
-                    });
-                    toggleBtn.dataset.state = 'original';
-                    toggleBtn.textContent = '正規化名で表示';
-                }
-            });
-        });
-    </script>
 </body>
 </html>
