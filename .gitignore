@@ -1,0 +1,30 @@
+# ローカルの機密設定
+apps/web/db_connection.cofg
+.env
+.env.local
+
+# Python 一時ファイル / 仮想環境
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+venv/
+.venv/
+env/
+ENV/
+
+# テスト / エディタ
+.pytest_cache/
+.coverage
+coverage.xml
+*.log
+
+# エディタ / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+
+# node / build 等（必要なら残す）
+node_modules/
+dist/

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>レシピ検索</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 5em auto; padding: 0 1em; text-align: center; }
+        h1 { color: #333; }
+        .search-form { margin-top: 2em; }
+        .search-box { width: 70%; padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; }
+        .submit-button { padding: 12px 24px; font-size: 16px; margin-left: 10px; border: none; background-color: #007BFF; color: white; border-radius: 5px; cursor: pointer; }
+        .submit-button:hover { background-color: #0056b3; }
+        .search-options { margin-bottom: 1em; display: flex; justify-content: center; gap: 20px; }
+        .search-options label { cursor: pointer; }
+        .search-note { font-size: 0.9em; color: #666; background-color: #f8f9fa; padding: 0.5em; border-radius: 4px; display: inline-block;}
+        .extra-links { margin-top: 2em; }
+        .extra-links a { text-decoration: none; color: #d63384; }
+        .extra-links a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <h1>レシピ検索エンジン</h1>
+    <div class="search-form">
+        <form action="/search" method="post">
+            <div class="search-options">
+                <label>
+                    <input type="radio" name="search_mode" value="or" checked> OR検索 (いずれかを含む)
+                </label>
+                <label>
+                    <input type="radio" name="search_mode" value="and"> AND検索 (すべてを含む)
+                </label>
+                <label>
+                    <input type="radio" name="search_mode" value="not"> NOT検索 (含み、かつ含まない)
+                </label>
+            </div>
+            <p class="search-note">
+                AND/OR検索は材料をスペースで区切ってください。<br>
+                NOT検索は「含む材料 除外する材料」の順で入力してください。
+            </p>
+            <input type="text" name="query" class="search-box" placeholder="材料名を入力...">
+            <input type="submit" value="検索" class="submit-button">
+        </form>
+        <div class="extra-links">
+            <p><a href="{{ url_for('basic_search_home') }}">基礎レシピを検索する</a></p>
+            </div>
+    </div>
+</body>
+</html>

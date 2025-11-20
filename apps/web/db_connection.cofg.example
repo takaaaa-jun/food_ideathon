@@ -1,0 +1,7 @@
+# --- データベース接続情報 ---
+DB_CONFIG = {
+    'user': 'name',
+    'password': 'pass',
+    'host': 'ip a',
+    'database': 'database_name'
+}
