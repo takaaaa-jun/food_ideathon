@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>基礎レシピ検索結果: {{ query }}</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 2em auto; padding: 0 1em; background-color: #f9f9f9; }
+        .recipe-block { background-color: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 1.5em; margin-bottom: 2em; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        h1, h2 { color: #333; }
+        h1 { font-size: 1.8em; }
+        h2 { font-size: 1.5em; color: #d63384; border-bottom: 2px solid #d63384; padding-bottom: 0.3em; margin-top: 0;}
+        h3 { color: #007BFF; margin-top: 2em; border-left: 4px solid #007BFF; padding-left: 0.5em;}
+        h4 { color: #555; margin-bottom: 0.5em; border-bottom: 1px solid #eee; padding-bottom: 0.2em;}
+        ul { list-style-type: none; padding-left: 10px; }
+        li { margin-bottom: 0.5em; line-height: 1.6; font-size: 0.9em; }
+        a { text-decoration: none; color: #d63384; }
+        a:hover { text-decoration: underline; }
+        .recipe-meta { background-color: #f8f9fa; padding: 1em; border-radius: 5px; margin-bottom: 1.5em;}
+        .recipe-meta p { margin: 0.5em 0; }
+        .ingredient-category { margin-bottom: 1.5em; }
+        
+        .toggle-button, .other-toggle-button {
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            padding: 5px;
+            transition: background-color 0.2s;
+        }
+        .toggle-button:hover, .other-toggle-button:hover {
+            background-color: #f0f0f0;
+        }
+        .toggle-button .arrow, .other-toggle-button .arrow {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            transition: transform 0.2s ease-in-out;
+        }
+        .toggle-button.open .arrow {
+            transform: translateY(-50%) rotate(180deg);
+        }
+    </style>
+</head>
+<body>
+    <h1>基礎レシピ検索結果: "{{ query }}"</h1>
+    <p><a href="{{ url_for('basic_search_home') }}">← 基礎レシピの検索に戻る</a></p>
+
+    {% if basic_recipes %}
+        <p>{{ basic_recipes|length }}件の基礎レシピが見つかりました．</p>
+        
+        {% for recipe_name, details in basic_recipes.items() %}
+            <div class="recipe-block">
+                <h2>{{ recipe_name }}</h2>
+
+                <div class="recipe-meta">
+                    <p><strong>レシピ数:</strong> {{ details.recipe_count }}</p>
+                    <p><strong>調理時間:</strong>
+                        {% if details.cooking_time and details.cooking_time|length > 0 %}
+                            {{ cooking_time_map.get(details.cooking_time[0], '情報なし') }}
+                        {% else %}
+                            情報なし
+                        {% endif %}
+                    </p>
+                    <p><strong>平均手順数:</strong> {{ details.steps.average_steps }}</p>
+                </div>
+                
+                <h3>材料の内訳</h3>
+                
+                {% set recipe_threshold = details.recipe_count * 0.2 %}
+
+                {# --- 1. 主要な栄養分類 (20%以上) を表示 --- #}
+                {% for category_name, ingredients in details.ingredient.items() %}
+                    {% if ingredients.all[0] >= recipe_threshold %}
+                        <div class="ingredient-category">
+                            {% set has_less_common = namespace(found=false) %}
+                            {% for ingredient_name, count_list in ingredients.items() %}
+                                {% if ingredient_name != 'all' and count_list[0] < ingredients.all[0] * 0.2 %}
+                                    {% set has_less_common.found = true %}
+                                {% endif %}
+                            {% endfor %}
+
+                            <h4 class="toggle-button">
+                                {{ category_name }} (合計: {{ ingredients.all[0] }}件)
+                                {% if has_less_common.found %}
+                                    <span class="arrow">▼</span>
+                                {% endif %}
+                            </h4>
+                            <ul>
+                                {% set threshold = ingredients.all[0] * 0.2 %}
+                                {% for ingredient_name, count_list in ingredients|dictsort(by='value', reverse=True) %}
+                                    {% if ingredient_name != 'all' %}
+                                        {% if count_list[0] < threshold %}
+                                            <li class="less-common" style="display: none;">{{ ingredient_name }}: {{ count_list[0] }}件</li>
+                                        {% else %}
+                                            <li>{{ ingredient_name }}: {{ count_list[0] }}件</li>
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+
+                {# --- 2. その他の分類 (<20%) をトグルリストにまとめる --- #}
+                <div class="other-categories-block">
+                    <h3 class="other-toggle-button">その他の分類 <span class="arrow">▼</span></h3>
+                    <div class="other-toggle-content" style="display: none;">
+                        {% for category_name, ingredients in details.ingredient.items() %}
+                            {% if ingredients.all[0] < recipe_threshold %}
+                                <div class="ingredient-category">
+                                    {% set has_less_common = namespace(found=false) %}
+                                    {% for ingredient_name, count_list in ingredients.items() %}
+                                        {% if ingredient_name != 'all' and count_list[0] < ingredients.all[0] * 0.2 %}
+                                            {% set has_less_common.found = true %}
+                                        {% endif %}
+                                    {% endfor %}
+        
+                                    <h4 class="toggle-button">
+                                        {{ category_name }} (合計: {{ ingredients.all[0] }}件)
+                                        {% if has_less_common.found %}
+                                            <span class="arrow">▼</span>
+                                        {% endif %}
+                                    </h4>
+                                    <ul>
+                                        {% set threshold = ingredients.all[0] * 0.2 %}
+                                        {% for ingredient_name, count_list in ingredients|dictsort(by='value', reverse=True) %}
+                                            {% if ingredient_name != 'all' %}
+                                                {% if count_list[0] < threshold %}
+                                                    <li class="less-common" style="display: none;">{{ ingredient_name }}: {{ count_list[0] }}件</li>
+                                                {% else %}
+                                                    <li>{{ ingredient_name }}: {{ count_list[0] }}件</li>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>「{{ query }}」に一致する基礎レシピは見つかりませんでした．</p>
+    {% endif %}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- 各栄養分類内の材料リストのトグル処理 ---
+            const toggleButtons = document.querySelectorAll('.toggle-button');
+            toggleButtons.forEach(button => {
+                if (!button.querySelector('.arrow')) return;
+                button.addEventListener('click', () => {
+                    const parentCategory = button.closest('.ingredient-category');
+                    if (!parentCategory) return;
+                    const lessCommonItems = parentCategory.querySelectorAll('.less-common');
+                    const arrow = button.querySelector('.arrow');
+                    button.classList.toggle('open');
+                    lessCommonItems.forEach(item => {
+                        item.style.display = (item.style.display === 'none' || item.style.display === '') ? 'list-item' : 'none';
+                    });
+                    if (arrow) arrow.textContent = button.classList.contains('open') ? '▲' : '▼';
+                });
+            });
+
+            // --- 「その他の分類」ブロック全体のトグル処理 ---
+            // querySelectorAll を使って、ページ内の全てのボタンを取得する
+            const otherToggleButtons = document.querySelectorAll('.other-toggle-button');
+            
+            // forEachループで、各ボタンにクリックイベントを設定する
+            otherToggleButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const content = button.nextElementSibling;
+                    const arrow = button.querySelector('.arrow');
+                    
+                    if (content.style.display === 'none' || content.style.display === '') {
+                        content.style.display = 'block';
+                        if (arrow) arrow.textContent = '▲';
+                    } else {
+                        content.style.display = 'none';
+                        if (arrow) arrow.textContent = '▼';
+                    }
+                });
+            });
+        });
+    </script>
+    </body>
+</html>

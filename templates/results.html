@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>検索結果</title>
+    <style>
+        body { font-family: sans-serif; max-width: 800px; margin: 2em auto; padding: 0 1em; background-color: #f9f9f9; }
+        .result-item { background-color: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 1.5em; margin-bottom: 1.5em; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .recipe-details { display: grid; grid-template-columns: 1fr 2fr; gap: 2em; margin-top: 1em; }
+        h1, h2 { color: #333; }
+        h2 { color: #d63384; }
+        h3 { border-bottom: 2px solid #eee; padding-bottom: 0.3em; color: #555;}
+        ul, ol { padding-left: 20px; margin-top: 0.5em; }
+        li { margin-bottom: 0.7em; line-height: 1.6; }
+        a { text-decoration: none; color: #007BFF; }
+        a:hover { text-decoration: underline; }
+        .recipe-meta {
+            margin-top: 0.5em;
+            margin-bottom: 1em;
+            color: #555;
+            font-size: 0.9em;
+        }
+        .recipe-meta span {
+            margin-right: 1.5em;
+        }
+        .recipe-meta span::before {
+            display: inline-block;
+            margin-right: 0.5em;
+            vertical-align: middle;
+        }
+        .time-icon::before { content: '🕒'; }
+        .serving-icon::before { content: '👥'; }
+    </style>
+</head>
+<body>
+    <h1>検索結果: "{{ query }}"</h1>
+    <p><a href="/">← 新しい検索に戻る</a></p>
+
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+
+    {% if recipes %}
+        <p>{{ recipes|length }}件のレシピが見つかりました。</p>
+        
+        {% for recipe in recipes %}
+            <div class="result-item">
+                <h2>{{ recipe.title }}</h2>
+
+                <div class="recipe-meta">
+                    {% if recipe.cooking_time %}
+                        <span class="time-icon">{{ recipe.cooking_time }}</span>
+                    {% endif %}
+                    {% if recipe.serving_for %}
+                        <span class="serving-icon">{{ recipe.serving_for }}</span>
+                    {% endif %}
+                </div>
+
+                <p>{{ recipe.description }}</p>
+                <div class="recipe-details">
+                    <div>
+                        <h3>材料</h3>
+                        <ul>
+                            {% for ingredient in recipe.ingredients %}
+                                <li>{{ ingredient.name }}: {{ ingredient.quantity }}</li>
+                            {% else %}
+                                <li>材料情報が登録されていません。</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div>
+                        <h3>作り方</h3>
+                        <ol>
+                            {% for step in recipe.steps %}
+                                <li>{{ step.memo }}</li>
+                            {% else %}
+                                <li>手順情報が登録されていません。</li>
+                            {% endfor %}
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% elif query and not error %}
+        <p>該当するレシピは見つかりませんでした。</p>
+    {% endif %}
+
+</body>
+</html>
