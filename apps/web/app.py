@@ -23,9 +23,6 @@ COOKING_TIME_MAP = {
     4: '約30分', 5: '約1時間', 6: '1時間以上'
 }
 
-# --- IPアドレス取得関連はローカル実行のため削除 ---
-
-
 def get_db_connection():
     """データベースへの接続を確立する"""
     try:
@@ -151,13 +148,20 @@ def search():
                 n.prot,
                 n.fat,
                 n.choavldf,
-                n.fib
+                n.fib,
+
+                rni.serving_size,
+                rni.calories AS total_calories,
+                rni.protein AS total_protein,
+                rni.fat AS total_fat,
+                rni.carbohydrates AS total_carbohydrates
             FROM recipes AS r
             LEFT JOIN ingredients AS i ON r.id = i.recipe_id
             LEFT JOIN steps AS s ON r.id = s.recipe_id
             LEFT JOIN ingredient_structured AS ist ON i.id = ist.ingredient_id
             LEFT JOIN ingredient_units AS iu ON i.id = iu.ingredient_id
             LEFT JOIN nutritions AS n ON ist.normalized_name = n.name COLLATE utf8mb4_general_ci
+            LEFT JOIN recipe_nutrition_info AS rni ON r.id = rni.recipe_id
             WHERE r.id IN ({placeholders})
             ORDER BY r.id, i.id, s.position ASC;
         """
@@ -171,6 +175,25 @@ def search():
             recipe_id = row['id']
             if recipe_id not in recipes_dict:
                 cooking_time_id = row.get('cooking_time')
+                
+                # 栄養素情報の取得と計算
+                serving_size = row.get('serving_size') or 1 # 0除算防止のためデフォルト1
+                if serving_size == 0: serving_size = 1
+                
+                total_nutrition = {
+                    'energy': row.get('total_calories') or 0,
+                    'protein': row.get('total_protein') or 0,
+                    'fat': row.get('total_fat') or 0,
+                    'carbs': row.get('total_carbohydrates') or 0
+                }
+                
+                per_person_nutrition = {
+                    'energy': total_nutrition['energy'] / serving_size,
+                    'protein': total_nutrition['protein'] / serving_size,
+                    'fat': total_nutrition['fat'] / serving_size,
+                    'carbs': total_nutrition['carbs'] / serving_size
+                }
+
                 recipes_dict[recipe_id] = {
                     'id': row['id'],
                     'title': row['title'],
@@ -179,8 +202,10 @@ def search():
                     'serving_for': row.get('serving_for'),
                     'ingredients': {}, 
                     'steps': {},
-                    'nutrition_totals': {
-                        'energy': 0, 'protein': 0, 'fat': 0, 'carbs': 0
+                    'nutrition_info': { # 新: DBからの値
+                        'total': total_nutrition,
+                        'per_person': per_person_nutrition,
+                        'serving_size': row.get('serving_size')
                     }
                 }
             
@@ -209,12 +234,6 @@ def search():
                     'nutrition': ing_nutrition
                 }
                 
-                if quantity_g > 0:
-                    recipes_dict[recipe_id]['nutrition_totals']['energy'] += ing_nutrition['energy']
-                    recipes_dict[recipe_id]['nutrition_totals']['protein'] += ing_nutrition['protein']
-                    recipes_dict[recipe_id]['nutrition_totals']['fat'] += ing_nutrition['fat']
-                    recipes_dict[recipe_id]['nutrition_totals']['carbs'] += ing_nutrition['carbs']
-
             if row['step_memo'] and row['position'] not in recipes_dict[recipe_id]['steps']:
                 recipes_dict[recipe_id]['steps'][row['position']] = {'memo': row['step_memo']}
 
@@ -228,7 +247,7 @@ def search():
                 'serving_for': recipe_data['serving_for'],
                 'ingredients': list(recipe_data['ingredients'].values()),
                 'steps': [step[1] for step in sorted(recipe_data['steps'].items())],
-                'nutrition_totals': recipe_data['nutrition_totals']
+                'nutrition_info': recipe_data['nutrition_info']
             }
              recipes_list.append(final_recipe)
 

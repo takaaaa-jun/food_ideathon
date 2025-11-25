@@ -147,6 +147,9 @@ ports:
   - "8081:80"  # 8080 → 8081に変更
 ```
 
+## プロジェクトの変更履歴
+プロジェクトの変更履歴は [CHANGELOG.md](CHANGELOG.md) をご覧ください。
+
 ## ライセンス
 Copyright (C) 2025 Jun Takahashi All Right Reserved.
 
