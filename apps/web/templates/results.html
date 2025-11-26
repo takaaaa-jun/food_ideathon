@@ -176,41 +176,65 @@
         <p>{{ recipe.description }}</p>
 
         <div class="nutrition-totals">
-            <h3>栄養素情報 (データベース値)</h3>
-            <p class="small-note" style="margin-bottom: 10px;">
-                ※ <strong>{{ recipe.nutrition_info.serving_size }}人分</strong> の栄養素情報です。
-            </p>
-
-            <div style="display: flex; gap: 2em;">
-                <div>
-                    <h4 style="margin: 0 0 0.5em 0; color: #555;">1人あたり (推定)</h4>
-                    <ul>
-                        <li><span class="label">カロリー:</span> <span class="value">{{
-                                "%.1f"|format(recipe.nutrition_info.per_person.energy) }} kcal</span></li>
-                        <li><span class="label">たんぱく質:</span> <span class="value">{{
-                                "%.1f"|format(recipe.nutrition_info.per_person.protein) }} g</span></li>
-                        <li><span class="label">脂質:</span> <span class="value">{{
-                                "%.1f"|format(recipe.nutrition_info.per_person.fat) }} g</span></li>
-                        <li><span class="label">炭水化物:</span> <span class="value">{{
-                                "%.1f"|format(recipe.nutrition_info.per_person.carbs) }} g</span></li>
-                    </ul>
-                </div>
-                <div style="border-left: 1px solid #ddd; padding-left: 2em;">
-                    <h4 style="margin: 0 0 0.5em 0; color: #555;">レシピ全体 ({{ recipe.nutrition_info.serving_size }}人分)
-                    </h4>
-                    <ul>
-                        <li><span class="label">カロリー:</span> <span class="value">{{
-                                "%.1f"|format(recipe.nutrition_info.total.energy) }} kcal</span></li>
-                        <li><span class="label">たんぱく質:</span> <span class="value">{{
-                                "%.1f"|format(recipe.nutrition_info.total.protein) }} g</span></li>
-                        <li><span class="label">脂質:</span> <span class="value">{{
-                                "%.1f"|format(recipe.nutrition_info.total.fat) }} g</span></li>
-                        <li><span class="label">炭水化物:</span> <span class="value">{{
-                                "%.1f"|format(recipe.nutrition_info.total.carbs) }} g</span></li>
-                    </ul>
-                </div>
-            </div>
+            <h3>レシピ全体の栄養素 (推定値)</h3>
+            <ul>
+                <li><span class="label">カロリー:</span> <span class="value">{{
+                        "%.1f"|format(recipe.nutrition_totals.energy) }} kcal</span></li>
+                <li><span class="label">たんぱく質:</span> <span class="value">{{
+                        "%.1f"|format(recipe.nutrition_totals.protein) }} g</span></li>
+                <li><span class="label">脂質:</span> <span class="value">{{ "%.1f"|format(recipe.nutrition_totals.fat) }}
+                        g</span></li>
+                <li><span class="label">炭水化物:</span> <span class="value">{{ "%.1f"|format(recipe.nutrition_totals.carbs)
+                        }} g</span></li>
+            </ul>
+            <p class="small-note">※ グラム(g)が特定できた材料のみの合計値です．</p>
         </div>
+
+        {% if recipe.nutrition_per_serving and recipe.nutrition_ratios %}
+        <div class="nutrition-totals">
+            <h3>1人分の栄養素 ({{ recipe.serving_size }}人分として計算)</h3>
+            <ul>
+                <li>
+                    <span class="label">カロリー:</span>
+                    <span class="value">
+                        {{ "%.1f"|format(recipe.nutrition_per_serving.energy) }} / {{ recipe.standards.energy }}
+                        [{{ "%.0f"|format(recipe.nutrition_ratios.energy) }}%]
+                    </span>
+                </li>
+                <li>
+                    <span class="label">たんぱく質:</span>
+                    <span class="value">
+                        {{ "%.1f"|format(recipe.nutrition_per_serving.protein) }} / {{ recipe.standards.protein }}
+                        [{{ "%.0f"|format(recipe.nutrition_ratios.protein) }}%]
+                    </span>
+                </li>
+                <li>
+                    <span class="label">脂質:</span>
+                    <span class="value">
+                        {{ "%.1f"|format(recipe.nutrition_per_serving.fat) }} / {{ recipe.standards.fat }}
+                        [{{ "%.0f"|format(recipe.nutrition_ratios.fat) }}%]
+                    </span>
+                </li>
+                <li>
+                    <span class="label">炭水化物:</span>
+                    <span class="value">
+                        {{ "%.1f"|format(recipe.nutrition_per_serving.carbs) }} / {{ recipe.standards.carbs }}
+                        [{{ "%.0f"|format(recipe.nutrition_ratios.carbs) }}%]
+                    </span>
+                </li>
+            </ul>
+
+            {% if recipe.standards.energy > recipe.nutrition_per_serving.energy %}
+            <div style="margin-top: 15px;">
+                <a href="/search_supplement?missing_calories={{ recipe.standards.energy - recipe.nutrition_per_serving.energy }}"
+                    style="background-color: #28a745; color: white; padding: 8px 12px; border-radius: 4px; font-size: 0.9em; text-decoration: none; display: inline-block;">
+                    不足分の栄養（カロリー）から検索
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
         <div class="recipe-details">
             <div>
                 <h3>材料</h3>
