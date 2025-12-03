@@ -146,19 +146,154 @@
         }
 
         /* ▲▲▲ ここまで追加 ▲▲▲ */
+
+        /* ▼▼▼ 検索フォーム用のスタイル (Hybrid) ▼▼▼ */
+        .search-form {
+            margin-top: 2em;
+            margin-bottom: 2em;
+            text-align: center;
+        }
+
+        /* Tags Styles */
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            min-height: 30px;
+            padding: 5px;
+            width: 70%;
+            margin: 0 auto 15px auto;
+            justify-content: center;
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            background-color: #007BFF;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            gap: 5px;
+        }
+
+        .tag-remove {
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.1em;
+            line-height: 1;
+            padding: 0 4px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.3);
+            transition: background-color 0.2s;
+        }
+
+        .tag-remove:hover {
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Row Styles */
+        .condition-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .condition-select {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+
+        .search-input {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 1em;
+            width: 50%;
+            box-sizing: border-box;
+        }
+
+        .remove-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 15px;
+            cursor: pointer;
+        }
+
+        .remove-btn:hover {
+            background-color: #c82333;
+        }
+
+        .add-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .add-btn:hover {
+            background-color: #218838;
+        }
+
+        .submit-button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            background-color: #007BFF;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .submit-button:hover {
+            background-color: #0056b3;
+        }
+
+        /* ▲▲▲ 追加ここまで ▲▲▲ */
     </style>
 </head>
 
 <body>
     <h1>検索結果: "{{ query }}"</h1>
-    <p><a href="/">← 新しい検索に戻る</a></p>
+    <p style="text-align: center;"><a href="/">← トップページに戻る</a></p>
 
-    {% if error %}
-    <p style="color: red;">{{ error }}</p>
-    {% endif %}
+    <!-- 検索フォーム (Hybrid) -->
+    <div class="search-form">
+        <form id="searchForm" action="/search" method="post">
+            <input type="hidden" name="search_mode" value="{{ search_mode }}">
+
+            <!-- 既存の検索条件（タグ） -->
+            <div class="tags-container" id="tagsContainer">
+                <!-- JavaScriptでここにタグを表示します -->
+            </div>
+
+            <!-- 新規追加用の行 -->
+            <div id="conditionsContainer">
+                <!-- JavaScriptでここに行を追加します -->
+            </div>
+
+            <button type="button" id="addConditionBtn" class="add-btn">＋ 条件を追加</button>
+            <br>
+
+            <input type="hidden" name="query" id="finalQuery">
+            <!-- 初期クエリ保持用 -->
+            <input type="hidden" id="initialQuery" value="{{ query }}">
+
+            <input type="submit" value="再検索" class="submit-button">
+        </form>
+    </div>
 
     {% if recipes %}
-    <p>{{ recipes|length }}件のレシピが見つかりました。</p>
+    <p style="text-align: center;">{{ total_count }}件中{{ recipes|length }}件のレシピを表示しています。</p>
 
     {% for recipe in recipes %}
     <div class="result-item">
@@ -182,9 +317,11 @@
                         "%.1f"|format(recipe.nutrition_totals.energy) }} kcal</span></li>
                 <li><span class="label">たんぱく質:</span> <span class="value">{{
                         "%.1f"|format(recipe.nutrition_totals.protein) }} g</span></li>
-                <li><span class="label">脂質:</span> <span class="value">{{ "%.1f"|format(recipe.nutrition_totals.fat) }}
+                <li><span class="label">脂質:</span> <span class="value">{{
+                        "%.1f"|format(recipe.nutrition_totals.fat) }}
                         g</span></li>
-                <li><span class="label">炭水化物:</span> <span class="value">{{ "%.1f"|format(recipe.nutrition_totals.carbs)
+                <li><span class="label">炭水化物:</span> <span class="value">{{
+                        "%.1f"|format(recipe.nutrition_totals.carbs)
                         }} g</span></li>
             </ul>
             <p class="small-note">※ グラム(g)が特定できた材料のみの合計値です．</p>
@@ -197,28 +334,32 @@
                 <li>
                     <span class="label">カロリー:</span>
                     <span class="value">
-                        {{ "%.1f"|format(recipe.nutrition_per_serving.energy) }} / {{ recipe.standards.energy }}
+                        {{ "%.1f"|format(recipe.nutrition_per_serving.energy) }} / {{
+                        recipe.standards.energy }}
                         [{{ "%.0f"|format(recipe.nutrition_ratios.energy) }}%]
                     </span>
                 </li>
                 <li>
                     <span class="label">たんぱく質:</span>
                     <span class="value">
-                        {{ "%.1f"|format(recipe.nutrition_per_serving.protein) }} / {{ recipe.standards.protein }}
+                        {{ "%.1f"|format(recipe.nutrition_per_serving.protein) }} / {{
+                        recipe.standards.protein }}
                         [{{ "%.0f"|format(recipe.nutrition_ratios.protein) }}%]
                     </span>
                 </li>
                 <li>
                     <span class="label">脂質:</span>
                     <span class="value">
-                        {{ "%.1f"|format(recipe.nutrition_per_serving.fat) }} / {{ recipe.standards.fat }}
+                        {{ "%.1f"|format(recipe.nutrition_per_serving.fat) }} / {{ recipe.standards.fat
+                        }}
                         [{{ "%.0f"|format(recipe.nutrition_ratios.fat) }}%]
                     </span>
                 </li>
                 <li>
                     <span class="label">炭水化物:</span>
                     <span class="value">
-                        {{ "%.1f"|format(recipe.nutrition_per_serving.carbs) }} / {{ recipe.standards.carbs }}
+                        {{ "%.1f"|format(recipe.nutrition_per_serving.carbs) }} / {{
+                        recipe.standards.carbs }}
                         [{{ "%.0f"|format(recipe.nutrition_ratios.carbs) }}%]
                     </span>
                 </li>
@@ -250,7 +391,8 @@
                                 F: {{ "%.1f"|format(ingredient.nutrition.fat) }}g |
                                 C: {{ "%.1f"|format(ingredient.nutrition.carbs) }}g ]
                             </span>
-                            <span class="small-note">({{ "%.0f"|format(ingredient.nutrition.normalized_quantity_g) }}g
+                            <span class="small-note">({{
+                                "%.0f"|format(ingredient.nutrition.normalized_quantity_g) }}g
                                 として計算)</span>
                             {% else %}
                             <span class="small-note">[量不明のため計算不可]</span>
@@ -276,9 +418,166 @@
     </div>
     {% endfor %}
     {% elif query and not error %}
-    <p>該当するレシピは見つかりませんでした。</p>
+    <p style="text-align: center;">該当するレシピは見つかりませんでした。</p>
+    {% endif %}
+
+    {% if error %}
+    <p style="color: red; text-align: center;">{{ error }}</p>
     {% endif %}
 
 </body>
+
+<script>
+    const tagsContainer = document.getElementById('tagsContainer');
+    const conditionsContainer = document.getElementById('conditionsContainer');
+    const addConditionBtn = document.getElementById('addConditionBtn');
+    const searchForm = document.getElementById('searchForm');
+    const finalQueryInput = document.getElementById('finalQuery');
+    const initialQueryInput = document.getElementById('initialQuery');
+
+    let tags = [];
+
+    // --- タグ関連の関数 ---
+
+    function renderTags() {
+        tagsContainer.innerHTML = '';
+        tags.forEach(tagText => {
+            const tagElement = document.createElement('div');
+            tagElement.className = 'tag';
+
+            const tagLabel = document.createElement('span');
+            if (tagText.startsWith('-')) {
+                tagElement.style.backgroundColor = '#dc3545'; // Red for NOT
+                tagLabel.textContent = 'NOT: ' + tagText.substring(1);
+            } else {
+                tagLabel.textContent = tagText;
+            }
+
+            const removeButton = document.createElement('span');
+            removeButton.className = 'tag-remove';
+            removeButton.textContent = '×';
+            removeButton.onclick = (e) => {
+                e.stopPropagation();
+                removeTag(tagText);
+            };
+
+            tagElement.appendChild(tagLabel);
+            tagElement.appendChild(removeButton);
+            tagsContainer.appendChild(tagElement);
+        });
+    }
+
+    function removeTag(text) {
+        tags = tags.filter(tag => tag !== text);
+        renderTags();
+    }
+
+    // --- 行関連の関数 ---
+
+    function createConditionRow(val = '', type = 'AND') {
+        const row = document.createElement('div');
+        row.className = 'condition-row';
+
+        // AND/NOT Select
+        const select = document.createElement('select');
+        select.className = 'condition-select';
+        const optAnd = document.createElement('option');
+        optAnd.value = 'AND';
+        optAnd.textContent = 'AND (含む)';
+        const optNot = document.createElement('option');
+        optNot.value = 'NOT';
+        optNot.textContent = 'NOT (含まない)';
+
+        if (type === 'NOT') {
+            optNot.selected = true;
+        } else {
+            optAnd.selected = true;
+        }
+
+        select.appendChild(optAnd);
+        select.appendChild(optNot);
+
+        // Input
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'search-input';
+        input.placeholder = 'キーワード';
+        input.value = val;
+
+        row.appendChild(select);
+        row.appendChild(input);
+
+        // Remove Button
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'remove-btn';
+        removeBtn.textContent = '×';
+        removeBtn.onclick = () => {
+            row.remove();
+            // 行がなくなっても、タグがあればOKなので強制追加はしない
+            // ただし、タグも行もない場合は1行追加してもいいかも（UX判断）
+            if (conditionsContainer.children.length === 0 && tags.length === 0) {
+                createConditionRow('', 'AND');
+            }
+        };
+        row.appendChild(removeBtn);
+
+        conditionsContainer.appendChild(row);
+    }
+
+    // --- 初期化処理 ---
+
+    const initialQuery = initialQueryInput.value;
+    if (initialQuery) {
+        // 全角スペースを半角に変換して分割
+        const tokens = initialQuery.replace(/　/g, ' ').split(' ').filter(t => t.trim() !== '');
+
+        // 既存のクエリはすべてタグとして表示
+        tokens.forEach(token => {
+            if (!tags.includes(token)) {
+                tags.push(token);
+            }
+        });
+        renderTags();
+    }
+
+    // 新規入力用に空の行を1つ追加
+    createConditionRow('', 'AND');
+
+    // --- イベントリスナー ---
+
+    addConditionBtn.addEventListener('click', () => {
+        createConditionRow();
+    });
+
+    searchForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        let queryParts = [...tags]; // タグを含める
+
+        // 行の入力を取得
+        const rows = conditionsContainer.querySelectorAll('.condition-row');
+        rows.forEach(row => {
+            const type = row.querySelector('select').value;
+            const val = row.querySelector('input').value.trim();
+
+            if (val) {
+                if (type === 'NOT') {
+                    queryParts.push('-' + val);
+                } else {
+                    queryParts.push(val);
+                }
+            }
+        });
+
+        if (queryParts.length === 0) {
+            alert('検索キーワードを入力してください。');
+            return;
+        }
+
+        finalQueryInput.value = queryParts.join(' ');
+        searchForm.submit();
+    });
+</script>
 
 </html>

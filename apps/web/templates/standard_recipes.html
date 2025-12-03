@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <title>基礎レシピ検索結果: {{ query }}</title>
     <style>
+        /* CSS from results.html */
         body {
             font-family: sans-serif;
             max-width: 800px;
@@ -13,12 +14,12 @@
             background-color: #f9f9f9;
         }
 
-        .recipe-block {
+        .result-item {
             background-color: #fff;
             border: 1px solid #ddd;
             border-radius: 8px;
             padding: 1.5em;
-            margin-bottom: 2em;
+            margin-bottom: 1.5em;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
@@ -27,65 +28,169 @@
             color: #333;
         }
 
-        h1 {
-            font-size: 1.8em;
-        }
-
         h2 {
-            font-size: 1.5em;
             color: #d63384;
-            border-bottom: 2px solid #d63384;
-            padding-bottom: 0.3em;
-            margin-top: 0;
         }
 
         h3 {
-            color: #007BFF;
-            margin-top: 0;
-            border-left: 4px solid #007BFF;
-            padding-left: 0.5em;
-        }
-
-        h4 {
+            border-bottom: 2px solid #eee;
+            padding-bottom: 0.3em;
             color: #555;
-            margin-bottom: 0.5em;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 0.2em;
         }
 
-        ul {
-            list-style-type: none;
-            padding-left: 10px;
+        ul,
+        ol {
+            padding-left: 20px;
+            margin-top: 0.5em;
         }
 
         li {
-            margin-bottom: 0.5em;
+            margin-bottom: 0.7em;
             line-height: 1.6;
-            font-size: 0.9em;
         }
 
         a {
             text-decoration: none;
-            color: #d63384;
+            color: #007BFF;
         }
 
         a:hover {
             text-decoration: underline;
         }
 
+        /* Hybrid Search Styles */
+        .search-form {
+            margin-top: 2em;
+            margin-bottom: 2em;
+            text-align: center;
+        }
+
+        /* Tags Styles */
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            min-height: 30px;
+            padding: 5px;
+            width: 70%;
+            margin: 0 auto 15px auto;
+            justify-content: center;
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            background-color: #007BFF;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            gap: 5px;
+        }
+
+        .tag-remove {
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.1em;
+            line-height: 1;
+            padding: 0 4px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.3);
+            transition: background-color 0.2s;
+        }
+
+        .tag-remove:hover {
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Row Styles */
+        .condition-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .condition-select {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+
+        .search-input {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 1em;
+            width: 50%;
+            box-sizing: border-box;
+        }
+
+        .remove-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 15px;
+            cursor: pointer;
+        }
+
+        .remove-btn:hover {
+            background-color: #c82333;
+        }
+
+        .add-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .add-btn:hover {
+            background-color: #218838;
+        }
+
+        .submit-button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            background-color: #007BFF;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .submit-button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Specific styles for Standard Recipes (adapted) */
         .recipe-meta {
+            margin-top: 0.5em;
+            margin-bottom: 1em;
+            color: #555;
+            font-size: 0.9em;
             background-color: #f8f9fa;
             padding: 1em;
             border-radius: 5px;
-            margin-bottom: 1.5em;
         }
 
-        .recipe-meta p {
-            margin: 0.5em 0;
+        .recipe-details-grid {
+            display: flex;
+            gap: 2em;
+            align-items: flex-start;
+            margin-top: 1em;
         }
 
-        .ingredient-category {
-            margin-bottom: 1.5em;
+        .ingredients-col,
+        .steps-col {
+            flex: 1;
+            min-width: 0;
         }
 
         .toggle-button,
@@ -115,24 +220,6 @@
             transform: translateY(-50%) rotate(180deg);
         }
 
-        .search-mode-display {
-            font-size: 0.7em;
-            color: #666;
-            font-weight: normal;
-        }
-
-        .recipe-details-grid {
-            display: flex;
-            gap: 2em;
-            align-items: flex-start;
-        }
-
-        .ingredients-col,
-        .steps-col {
-            flex: 1;
-            min-width: 0;
-        }
-
         .show-more-steps {
             background-color: #007BFF;
             color: white;
@@ -154,6 +241,17 @@
                 flex-direction: column;
             }
         }
+
+        /* Search Mode Radio Styles */
+        .search-mode-options {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .search-mode-options label {
+            margin: 0 10px;
+            cursor: pointer;
+        }
     </style>
 </head>
 
@@ -161,22 +259,62 @@
     <h1>
         基礎レシピ検索結果: "{{ query }}"
         {% if search_mode == 'ingredient' %}
-        <span class="search-mode-display">(材料名検索)</span>
+        <span style="font-size: 0.6em; color: #666;">(材料名検索)</span>
         {% else %}
-        <span class="search-mode-display">(レシピ名検索)</span>
+        <span style="font-size: 0.6em; color: #666;">(レシピ名検索)</span>
         {% endif %}
     </h1>
-    <p><a href="{{ url_for('standard_search_home') }}">← 基礎レシピの検索に戻る</a></p>
+    <p style="text-align: center;">
+        <a href="/">← トップページに戻る</a> |
+        <a href="{{ url_for('standard_search_home') }}">基礎レシピの検索に戻る</a>
+    </p>
+
+    <!-- Search Form (Hybrid) -->
+    <div class="search-form">
+        <form id="searchForm" action="{{ url_for('standard_search') }}" method="post">
+
+            <!-- Search Mode Selection (Preserved) -->
+            <div class="search-mode-options">
+                <label>
+                    <input type="radio" name="search_mode" value="recipe" {% if search_mode !='ingredient' %}checked{%
+                        endif %}> レシピ名
+                </label>
+                <label>
+                    <input type="radio" name="search_mode" value="ingredient" {% if search_mode=='ingredient'
+                        %}checked{% endif %}> 材料名
+                </label>
+            </div>
+
+            <!-- 既存の検索条件（タグ） -->
+            <div class="tags-container" id="tagsContainer">
+                <!-- JavaScriptでここにタグを表示します -->
+            </div>
+
+            <!-- 新規追加用の行 -->
+            <div id="conditionsContainer">
+                <!-- JavaScriptでここに行を追加します -->
+            </div>
+
+            <button type="button" id="addConditionBtn" class="add-btn">＋ 条件を追加</button>
+            <br>
+
+            <input type="hidden" name="query" id="finalQuery">
+            <!-- 初期クエリ保持用 -->
+            <input type="hidden" id="initialQuery" value="{{ query }}">
+
+            <input type="submit" value="再検索" class="submit-button">
+        </form>
+    </div>
 
     {% if error %}
-    <p style="color: red;">{{ error }}</p>
+    <p style="color: red; text-align: center;">{{ error }}</p>
     {% endif %}
 
     {% if basic_recipes %}
-    <p>{{ basic_recipes|length }}件の基礎レシピが見つかりました．</p>
+    <p style="text-align: center;">{{ total_count }}件中、上位{{ basic_recipes|length }}件を表示しています。</p>
 
     {% for recipe_name, details in basic_recipes %}
-    <div class="recipe-block">
+    <div class="result-item">
         <h2>{{ recipe_name }}</h2>
 
         <div class="recipe-meta">
@@ -194,10 +332,9 @@
         <div class="recipe-details-grid">
             <div class="ingredients-col">
                 <h3>材料の内訳</h3>
-
                 {% set recipe_threshold = details.recipe_count * 0.2 %}
 
-                {# --- 1. 主要な栄養分類 (20%以上) を表示 --- #}
+                {# --- Ingredient Logic (Copied from original) --- #}
                 {% for category_name, ingredients in details.ingredient.items() %}
                 {% if ingredients.all[0] >= recipe_threshold %}
                 <div class="ingredient-category">
@@ -213,7 +350,6 @@
                         <ul>
                             {% set threshold = ingredients.all[0] * 0.2 %}
                             {% set visible_count = namespace(value=0) %}
-                            {# Count how many items are above threshold #}
                             {% for ingredient_name, count_list in ingredients|dictsort(by='value', reverse=True) %}
                             {% if ingredient_name != 'all' and count_list[0] >= threshold %}
                             {% set visible_count.value = visible_count.value + 1 %}
@@ -227,7 +363,6 @@
                             <li>{{ ingredient_name }}: {{ count_list[0] }}件</li>
                             {% set first_item_shown.value = true %}
                             {% elif visible_count.value == 0 and not first_item_shown.value %}
-                            {# If no items above threshold, show the first (highest count) item #}
                             <li>{{ ingredient_name }}: {{ count_list[0] }}件</li>
                             {% set first_item_shown.value = true %}
                             {% else %}
@@ -241,7 +376,7 @@
                 {% endif %}
                 {% endfor %}
 
-                {# --- 2. その他の分類 (<20%) をトグルリストにまとめる --- #} <div class="other-categories-block">
+                <div class="other-categories-block">
                     <h3 class="other-toggle-button">その他の分類 <span class="arrow">▼</span></h3>
                     <div class="other-toggle-content" style="display: none;">
                         {% for category_name, ingredients in details.ingredient.items() %}
@@ -258,23 +393,21 @@
                                 <ul>
                                     {% set threshold = ingredients.all[0] * 0.2 %}
                                     {% set visible_count = namespace(value=0) %}
-                                    {# Count how many items are above threshold #}
-                                    {% for ingredient_name, count_list in ingredients|dictsort(by='value', reverse=True)
-                                    %}
+                                    {% for ingredient_name, count_list in ingredients|dictsort(by='value',
+                                    reverse=True) %}
                                     {% if ingredient_name != 'all' and count_list[0] >= threshold %}
                                     {% set visible_count.value = visible_count.value + 1 %}
                                     {% endif %}
                                     {% endfor %}
 
                                     {% set first_item_shown = namespace(value=false) %}
-                                    {% for ingredient_name, count_list in ingredients|dictsort(by='value', reverse=True)
-                                    %}
+                                    {% for ingredient_name, count_list in ingredients|dictsort(by='value',
+                                    reverse=True) %}
                                     {% if ingredient_name != 'all' %}
                                     {% if count_list[0] >= threshold %}
                                     <li>{{ ingredient_name }}: {{ count_list[0] }}件</li>
                                     {% set first_item_shown.value = true %}
                                     {% elif visible_count.value == 0 and not first_item_shown.value %}
-                                    {# If no items above threshold, show the first (highest count) item #}
                                     <li>{{ ingredient_name }}: {{ count_list[0] }}件</li>
                                     {% set first_item_shown.value = true %}
                                     {% else %}
@@ -287,41 +420,41 @@
                     </div>
                     {% endif %}
                     {% endfor %}
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="steps-col">
-        <h3>よくある手順</h3>
-        {% if details.standard_steps %}
-        <ul class="steps-list" data-recipe-index="{{ loop.index0 }}">
-            {% for step in details.standard_steps %}
-            <li class="step-item" data-index="{{ loop.index0 }}"
-                style="display: {% if loop.index0 < 20 %}list-item{% else %}none{% endif %};">
-                ({{ step.food_name }}, {{ step.action }}) ({{ step.count }}件)
-            </li>
-            {% endfor %}
-        </ul>
-        {% if details.standard_steps|length > 20 %}
-        <button class="show-more-steps" data-recipe-index="{{ loop.index0 }}" data-current-count="20"
-            data-total-count="{{ details.standard_steps|length }}">
-            もっと表示 (残り{{ details.standard_steps|length - 20 }}件)
-        </button>
-        {% endif %}
-        {% else %}
-        <p>手順情報はありません。</p>
-        {% endif %}
-    </div>
+        <div class="steps-col">
+            <h3>よくある手順</h3>
+            {% if details.standard_steps %}
+            <ul class="steps-list" data-recipe-index="{{ loop.index0 }}">
+                {% for step in details.standard_steps %}
+                <li class="step-item" data-index="{{ loop.index0 }}"
+                    style="display: {% if loop.index0 < 20 %}list-item{% else %}none{% endif %};">
+                    ({{ step.food_name }}, {{ step.action }}) ({{ step.count }}件)
+                </li>
+                {% endfor %}
+            </ul>
+            {% if details.standard_steps|length > 20 %}
+            <button class="show-more-steps" data-recipe-index="{{ loop.index0 }}" data-current-count="20"
+                data-total-count="{{ details.standard_steps|length }}">
+                もっと表示 (残り{{ details.standard_steps|length - 20 }}件)
+            </button>
+            {% endif %}
+            {% else %}
+            <p>手順情報はありません。</p>
+            {% endif %}
+        </div>
     </div>
     </div>
     {% endfor %}
     {% elif query and not error %}
-    <p>「{{ query }}」に一致する基礎レシピは見つかりませんでした．</p>
+    <p style="text-align: center;">「{{ query }}」に一致する基礎レシピは見つかりませんでした．</p>
     {% endif %}
 
     <script>
+        // JS for Toggles (Standard Recipe Logic)
         document.addEventListener('DOMContentLoaded', () => {
-            // --- 各栄養分類内の材料リストのトグル処理 ---
             const toggleButtons = document.querySelectorAll('.toggle-button');
             toggleButtons.forEach(button => {
                 if (!button.querySelector('.arrow')) return;
@@ -338,13 +471,11 @@
                 });
             });
 
-            // --- 「その他の分類」ブロック全体のトグル処理 ---
             const otherToggleButtons = document.querySelectorAll('.other-toggle-button');
             otherToggleButtons.forEach(button => {
                 button.addEventListener('click', () => {
                     const content = button.nextElementSibling;
                     const arrow = button.querySelector('.arrow');
-
                     if (content.style.display === 'none' || content.style.display === '') {
                         content.style.display = 'block';
                         if (arrow) arrow.textContent = '▲';
@@ -355,7 +486,6 @@
                 });
             });
 
-            // --- 「もっと表示」ボタンの処理 ---
             const showMoreButtons = document.querySelectorAll('.show-more-steps');
             showMoreButtons.forEach(button => {
                 button.addEventListener('click', () => {
@@ -364,16 +494,12 @@
                     const totalCount = parseInt(button.getAttribute('data-total-count'));
                     const stepsList = document.querySelector(`.steps-list[data-recipe-index="${recipeIndex}"]`);
                     const stepItems = stepsList.querySelectorAll('.step-item');
-
-                    // 次の10件を表示
                     const newCount = Math.min(currentCount + 10, totalCount);
                     for (let i = currentCount; i < newCount; i++) {
                         if (stepItems[i]) {
                             stepItems[i].style.display = 'list-item';
                         }
                     }
-
-                    // ボタンのテキストと状態を更新
                     button.setAttribute('data-current-count', newCount);
                     const remaining = totalCount - newCount;
                     if (remaining > 0) {
@@ -386,6 +512,157 @@
         });
     </script>
 
+    <script>
+        // JS for Hybrid Search (Tags + Rows)
+        const tagsContainer = document.getElementById('tagsContainer');
+        const conditionsContainer = document.getElementById('conditionsContainer');
+        const addConditionBtn = document.getElementById('addConditionBtn');
+        const searchForm = document.getElementById('searchForm');
+        const finalQueryInput = document.getElementById('finalQuery');
+        const initialQueryInput = document.getElementById('initialQuery');
+
+        let tags = [];
+
+        // --- タグ関連の関数 ---
+
+        function renderTags() {
+            tagsContainer.innerHTML = '';
+            tags.forEach(tagText => {
+                const tagElement = document.createElement('div');
+                tagElement.className = 'tag';
+
+                const tagLabel = document.createElement('span');
+                if (tagText.startsWith('-')) {
+                    tagElement.style.backgroundColor = '#dc3545'; // Red for NOT
+                    tagLabel.textContent = 'NOT: ' + tagText.substring(1);
+                } else {
+                    tagLabel.textContent = tagText;
+                }
+
+                const removeButton = document.createElement('span');
+                removeButton.className = 'tag-remove';
+                removeButton.textContent = '×';
+                removeButton.onclick = (e) => {
+                    e.stopPropagation();
+                    removeTag(tagText);
+                };
+
+                tagElement.appendChild(tagLabel);
+                tagElement.appendChild(removeButton);
+                tagsContainer.appendChild(tagElement);
+            });
+        }
+
+        function removeTag(text) {
+            tags = tags.filter(tag => tag !== text);
+            renderTags();
+        }
+
+        // --- 行関連の関数 ---
+
+        function createConditionRow(val = '', type = 'AND') {
+            const row = document.createElement('div');
+            row.className = 'condition-row';
+
+            // AND/NOT Select
+            const select = document.createElement('select');
+            select.className = 'condition-select';
+            const optAnd = document.createElement('option');
+            optAnd.value = 'AND';
+            optAnd.textContent = 'AND (含む)';
+            const optNot = document.createElement('option');
+            optNot.value = 'NOT';
+            optNot.textContent = 'NOT (含まない)';
+
+            if (type === 'NOT') {
+                optNot.selected = true;
+            } else {
+                optAnd.selected = true;
+            }
+
+            select.appendChild(optAnd);
+            select.appendChild(optNot);
+
+            // Input
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'search-input';
+            input.placeholder = 'キーワード';
+            input.value = val;
+
+            row.appendChild(select);
+            row.appendChild(input);
+
+            // Remove Button
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'remove-btn';
+            removeBtn.textContent = '×';
+            removeBtn.onclick = () => {
+                row.remove();
+                if (conditionsContainer.children.length === 0 && tags.length === 0) {
+                    createConditionRow('', 'AND');
+                }
+            };
+            row.appendChild(removeBtn);
+
+            conditionsContainer.appendChild(row);
+        }
+
+        // --- 初期化処理 ---
+
+        const initialQuery = initialQueryInput.value;
+        if (initialQuery) {
+            // 全角スペースを半角に変換して分割
+            const tokens = initialQuery.replace(/　/g, ' ').split(' ').filter(t => t.trim() !== '');
+
+            // 既存のクエリはすべてタグとして表示
+            tokens.forEach(token => {
+                if (!tags.includes(token)) {
+                    tags.push(token);
+                }
+            });
+            renderTags();
+        }
+
+        // 新規入力用に空の行を1つ追加
+        createConditionRow('', 'AND');
+
+        // --- イベントリスナー ---
+
+        addConditionBtn.addEventListener('click', () => {
+            createConditionRow();
+        });
+
+        searchForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            let queryParts = [...tags]; // タグを含める
+
+            // 行の入力を取得
+            const rows = conditionsContainer.querySelectorAll('.condition-row');
+            rows.forEach(row => {
+                const type = row.querySelector('select').value;
+                const val = row.querySelector('input').value.trim();
+
+                if (val) {
+                    if (type === 'NOT') {
+                        queryParts.push('-' + val);
+                    } else {
+                        queryParts.push(val);
+                    }
+                }
+            });
+
+            if (queryParts.length === 0) {
+                alert('検索キーワードを入力してください。');
+                return;
+            }
+
+            finalQueryInput.value = queryParts.join(' ');
+            searchForm.submit();
+        });
+    </script>
 </body>
 
 </html>

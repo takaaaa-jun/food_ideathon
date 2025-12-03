@@ -3,59 +3,24 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>基準レシピ検索</title>
+    <title>基礎レシピ検索</title>
     <style>
         body {
             font-family: sans-serif;
-            max-width: 800px;
-            margin: 2em auto;
+            max-width: 600px;
+            margin: 5em auto;
             padding: 0 1em;
-            background-color: #f9f9f9;
+            text-align: center;
         }
 
         h1 {
             color: #333;
-            text-align: center;
-        }
-
-        a {
-            text-decoration: none;
-            color: #007BFF;
-        }
-
-        a:hover {
-            text-decoration: underline;
         }
 
         .search-form {
-            margin: 2em 0;
-            text-align: center;
+            margin-top: 2em;
         }
 
-        .search-box {
-            width: 60%;
-            padding: 10px;
-            font-size: 1em;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-
-        .submit-button {
-            padding: 10px 20px;
-            font-size: 1em;
-            margin-left: 10px;
-            border: none;
-            background-color: #007BFF;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .submit-button:hover {
-            background-color: #0056b3;
-        }
-
-        /* ▼▼▼ 追加 ▼▼▼ */
         .search-options {
             margin-bottom: 1em;
             display: flex;
@@ -67,7 +32,95 @@
             cursor: pointer;
         }
 
-        /* ▲▲▲ 追加 ▲▲▲ */
+        .search-note {
+            font-size: 0.9em;
+            color: #666;
+            background-color: #f8f9fa;
+            padding: 0.5em;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 1em;
+        }
+
+        /* 入力ボックスのスタイル */
+        .search-input {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 1em;
+            width: 70%;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+
+        .submit-button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            background-color: #007BFF;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .submit-button:hover {
+            background-color: #0056b3;
+        }
+
+        .extra-links {
+            margin-top: 2em;
+        }
+
+        .extra-links a {
+            text-decoration: none;
+            color: #d63384;
+        }
+
+        .extra-links a:hover {
+            text-decoration: underline;
+        }
+
+        .condition-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .condition-select {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+
+        .remove-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 15px;
+            cursor: pointer;
+        }
+
+        .remove-btn:hover {
+            background-color: #c82333;
+        }
+
+        .add-btn {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .add-btn:hover {
+            background-color: #218838;
+        }
     </style>
 </head>
 
@@ -76,7 +129,8 @@
     <p style="text-align: center;"><a href="/">← トップページに戻る</a></p>
 
     <div class="search-form">
-        <form action="{{ url_for('standard_search') }}" method="post">
+        <form id="searchForm" action="{{ url_for('standard_search') }}" method="post">
+            <!-- Search Mode Selection -->
             <div class="search-options">
                 <label>
                     <input type="radio" name="search_mode" value="recipe" checked> レシピ名で検索
@@ -85,10 +139,112 @@
                     <input type="radio" name="search_mode" value="ingredient"> 材料名で検索
                 </label>
             </div>
-            <input type="text" name="query" class="search-box" placeholder="キーワードを入力...">
+
+            <p class="search-note">
+                検索条件を追加して、詳細な検索ができます。<br>
+                「NOT」を選択すると、その単語を含まないレシピを検索します。
+            </p>
+
+            <div id="conditionsContainer">
+                <!-- JavaScriptでここに行を追加します -->
+            </div>
+
+            <button type="button" id="addConditionBtn" class="add-btn">＋ 条件を追加</button>
+            <br>
+
+            <input type="hidden" name="query" id="finalQuery">
             <input type="submit" value="検索" class="submit-button">
         </form>
     </div>
+
+    <script>
+        const conditionsContainer = document.getElementById('conditionsContainer');
+        const addConditionBtn = document.getElementById('addConditionBtn');
+        const searchForm = document.getElementById('searchForm');
+        const finalQueryInput = document.getElementById('finalQuery');
+
+        // 条件行を作成する関数
+        function createConditionRow(isFirst = false) {
+            const row = document.createElement('div');
+            row.className = 'condition-row';
+
+            // AND/NOT Select
+            const select = document.createElement('select');
+            select.className = 'condition-select';
+            const optAnd = document.createElement('option');
+            optAnd.value = 'AND';
+            optAnd.textContent = 'AND (含む)';
+            const optNot = document.createElement('option');
+            optNot.value = 'NOT';
+            optNot.textContent = 'NOT (含まない)';
+            select.appendChild(optAnd);
+            select.appendChild(optNot);
+
+            // Input
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'search-input';
+            input.style.marginBottom = '0'; // Override default margin
+            input.style.width = '50%';
+            input.placeholder = 'キーワード';
+
+            row.appendChild(select);
+            row.appendChild(input);
+
+            // Remove Button
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'remove-btn';
+            removeBtn.textContent = '×';
+            removeBtn.onclick = () => {
+                row.remove();
+                if (conditionsContainer.children.length === 0) {
+                    createConditionRow(true);
+                }
+            };
+            row.appendChild(removeBtn);
+
+            conditionsContainer.appendChild(row);
+            input.focus();
+        }
+
+        // 初期表示で1行追加
+        createConditionRow(true);
+
+        // 追加ボタン
+        addConditionBtn.addEventListener('click', () => {
+            createConditionRow();
+        });
+
+        // 送信時の処理
+        searchForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const rows = conditionsContainer.querySelectorAll('.condition-row');
+            let queryParts = [];
+
+            rows.forEach(row => {
+                const type = row.querySelector('select').value;
+                const val = row.querySelector('input').value.trim();
+
+                if (val) {
+                    if (type === 'NOT') {
+                        queryParts.push('-' + val);
+                    } else {
+                        queryParts.push(val);
+                    }
+                }
+            });
+
+            if (queryParts.length === 0) {
+                alert('検索キーワードを入力してください。');
+                return;
+            }
+
+            finalQueryInput.value = queryParts.join(' ');
+            searchForm.submit();
+        });
+    </script>
 </body>
 
 </html>

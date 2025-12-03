@@ -33,7 +33,122 @@ def get_db_connection():
         return None
 
 
+def get_synonyms(cursor, keyword):
+    """
+    指定されたキーワードの同義語を取得する
+    """
+    synonyms = {keyword}
+    
+    # 1. キーワードが normalized_name かどうか確認し、そうなら synonym を取得
+    sql_get_synonyms = "SELECT synonym FROM synonym_dictionary WHERE normalized_name = %s"
+    cursor.execute(sql_get_synonyms, (keyword,))
+    for row in cursor.fetchall():
+        synonyms.add(row['synonym'])
+
+    # 2. キーワードが synonym かどうか確認し、そうなら normalized_name を取得
+    #    さらに、その normalized_name に紐づく他の synonym も取得
+    sql_get_normalized = "SELECT normalized_name FROM synonym_dictionary WHERE synonym = %s"
+    cursor.execute(sql_get_normalized, (keyword,))
+    normalized_names = [row['normalized_name'] for row in cursor.fetchall()]
+    
+    for norm_name in normalized_names:
+        synonyms.add(norm_name)
+        cursor.execute(sql_get_synonyms, (norm_name,))
+        for row in cursor.fetchall():
+            synonyms.add(row['synonym'])
+            
+    return list(synonyms)
+
+def get_normalized_name(cursor, keyword):
+    """
+    指定されたキーワードに対応する normalized_name を取得する
+    """
+    # 1. キーワードが既に normalized_name として存在するか確認
+    sql_check_norm = "SELECT normalized_name FROM synonym_dictionary WHERE normalized_name = %s LIMIT 1"
+    cursor.execute(sql_check_norm, (keyword,))
+    if cursor.fetchone():
+        return keyword
+
+    # 2. キーワードが synonym の場合、対応する normalized_name を取得
+    sql_get_norm = "SELECT normalized_name FROM synonym_dictionary WHERE synonym = %s LIMIT 1"
+    cursor.execute(sql_get_norm, (keyword,))
+    row = cursor.fetchone()
+    if row:
+        return row['normalized_name']
+        
+    return None
+
+def unify_keywords(cursor, keywords):
+    """
+    キーワードリスト内の同義語を統合する。
+    同じ normalized_name を持つキーワードが複数ある場合、
+    synonym_dictionary 全体の中から id が最も小さいものを代表として返す。
+    (入力に含まれていない同義語でも、IDが最小ならそれが採用される)
+    """
+    if not keywords:
+        return []
+
+    # 1. 各入力キーワードの normalized_name を取得
+    placeholders = ', '.join(['%s'] * len(keywords))
+    sql = f"""
+        SELECT synonym, normalized_name 
+        FROM synonym_dictionary 
+        WHERE synonym IN ({placeholders})
+    """
+    cursor.execute(sql, keywords)
+    rows = cursor.fetchall()
+    
+    # keyword -> normalized_name
+    kw_to_norm = {row['synonym']: row['normalized_name'] for row in rows}
+    
+    # 2. 必要な normalized_name を収集
+    seen_norms = set()
+    for kw in keywords:
+        if kw in kw_to_norm:
+            seen_norms.add(kw_to_norm[kw])
+            
+    # 3. 各 normalized_name について、IDが最小の synonym を取得
+    norm_to_best = {}
+    if seen_norms:
+        placeholders_norm = ', '.join(['%s'] * len(seen_norms))
+        # normalized_name ごとに ID 昇順で取得し、最初の一件（最小ID）を採用する
+        # MySQLのバージョンによってはウィンドウ関数が使えるが、ここではシンプルに全取得してPythonで処理するか、
+        # あるいは相関サブクエリを使う。
+        # シンプルに normalized_name IN (...) で取得して、Python側で最小を選ぶのが確実で速い（データ量が少なければ）。
+        
+        sql_best = f"""
+            SELECT normalized_name, synonym, id
+            FROM synonym_dictionary 
+            WHERE normalized_name IN ({placeholders_norm})
+            ORDER BY id ASC
+        """
+        cursor.execute(sql_best, list(seen_norms))
+        best_rows = cursor.fetchall()
+        
+        for row in best_rows:
+            norm = row['normalized_name']
+            if norm not in norm_to_best:
+                norm_to_best[norm] = row['synonym']
+    
+    # 4. 結果の構築 (入力順序を維持しつつ置換)
+    unified_keywords = []
+    processed_norms = set()
+    
+    for kw in keywords:
+        if kw in kw_to_norm:
+            norm = kw_to_norm[kw]
+            if norm not in processed_norms:
+                if norm in norm_to_best:
+                    unified_keywords.append(norm_to_best[norm])
+                processed_norms.add(norm)
+        else:
+            # DBにないキーワードはそのまま
+            unified_keywords.append(kw)
+            
+    return unified_keywords
+
 @app.route('/')
+
 def index():
     """トップページを表示する"""
     return render_template('index.html')
@@ -59,52 +174,153 @@ def search():
         if not keywords:
             return render_template('results.html', recipes=[], query=search_query)
 
+        # Separate inclusions and exclusions
+        raw_inclusions = [k for k in keywords if not k.startswith('-')]
+        exclusions = [k[1:] for k in keywords if k.startswith('-') and len(k) > 1]
+
+        # Unify inclusions (resolve synonyms to the one with smallest ID)
+        unified_inclusions = unify_keywords(cursor, raw_inclusions)
+
+        # Expand inclusions with synonyms
+        inclusions = []
+        for inc in unified_inclusions:
+            syns = get_synonyms(cursor, inc)
+            inclusions.append(syns) # List of lists: [['玉ねぎ', 'たまねぎ'], ['人参', 'にんじん']]
+
+
         attributes = ['cookpad', 'rakuten']
         selected_attribute = random.choice(attributes)
 
         sql_get_ids = ""
         params = []
 
-        if search_mode == 'and':
-            placeholders = ', '.join(['%s'] * len(keywords))
-            sql_get_ids = f"""
-                SELECT i.recipe_id FROM ingredients AS i
+        # Base query: Filter by attribute
+        # We need to handle cases:
+        # 1. Only Inclusions
+        # 2. Only Exclusions (should probably show all recipes minus exclusions? or error? Let's assume error or empty for now if no inclusions, but user might want "not onion" from all. Let's support "not onion" from all.)
+        # 3. Mixed
+
+        # Strategy:
+        # Find recipes that have ALL inclusions.
+        # AND do NOT have ANY exclusions.
+
+        if not inclusions and not exclusions:
+             return render_template('results.html', recipes=[], query=search_query)
+
+        # Start building the query
+        # We will select recipe_ids that match criteria
+        
+        # Part 1: Inclusions (AND logic)
+        # Part 1: Inclusions (AND logic)
+        if inclusions:
+            # We need to find recipes that match AT LEAST ONE synonym for EACH inclusion group.
+            # Example: (name IN ('玉ねぎ', 'たまねぎ')) AND (name IN ('人参', 'にんじん'))
+            
+            # Since MySQL doesn't have a simple "contains all from list of lists" for a single column in a group by,
+            # we can use the HAVING clause with conditional counts.
+            
+            conditions = []
+            all_params = []
+            
+            for syn_group in inclusions:
+                placeholders = ', '.join(['%s'] * len(syn_group))
+                conditions.append(f"SUM(CASE WHEN i.name IN ({placeholders}) THEN 1 ELSE 0 END) > 0")
+                all_params.extend(syn_group)
+            
+            having_clause = " AND ".join(conditions)
+            
+            # To optimize, we should also filter in WHERE clause to only include relevant ingredients
+            # Flatten all synonyms for WHERE IN clause
+            all_synonyms_flat = [item for sublist in inclusions for item in sublist]
+            placeholders_all = ', '.join(['%s'] * len(all_synonyms_flat))
+            
+            sql_inclusions = f"""
+                SELECT i.recipe_id, r.attribute
+                FROM ingredients AS i
                 JOIN recipes AS r ON i.recipe_id = r.id
-                WHERE r.attribute = %s AND i.name IN ({placeholders})
+                WHERE i.name IN ({placeholders_all})
                 GROUP BY i.recipe_id
-                HAVING COUNT(DISTINCT i.name) = %s
-                LIMIT 20;
+                HAVING {having_clause}
             """
-            params = [selected_attribute] + keywords + [len(keywords)]
+            params_inc = all_synonyms_flat + all_params
 
-        elif search_mode == 'not':
-            if len(keywords) < 2:
-                error_msg = "NOT検索には、含む材料と除外する材料の2つをスペース区切りで入力してください．"
-                return render_template('results.html', recipes=[], query=search_query, error=error_msg)
-            include_ingredient = keywords[0]
-            exclude_ingredient = keywords[1]
-            sql_get_ids = """
-                SELECT DISTINCT i.recipe_id FROM ingredients AS i
-                JOIN recipes AS r ON i.recipe_id = r.id
-                WHERE r.attribute = %s AND i.name = %s AND i.recipe_id NOT IN (
-                    SELECT DISTINCT recipe_id FROM ingredients WHERE name = %s
-                )
-                LIMIT 20;
+        else:
+            # If no inclusions, we start with ALL recipes (limited to 100 for performance across all attributes)
+            sql_inclusions = f"""
+                SELECT r.id as recipe_id, r.attribute
+                FROM recipes AS r
+                LIMIT 100
             """
-            params = [selected_attribute, include_ingredient, exclude_ingredient]
+            params_inc = []
+        
+        # Execute Part 1 to get candidate IDs
+        cursor.execute(sql_inclusions, params_inc)
+        candidates = cursor.fetchall() # List of dicts: [{'recipe_id': 1, 'attribute': 'cookpad'}, ...]
+        candidate_ids = [row['recipe_id'] for row in candidates]
 
-        else: # or
-            placeholders = ', '.join(['%s'] * len(keywords))
-            sql_get_ids = f"""
-                SELECT DISTINCT i.recipe_id FROM ingredients AS i
-                JOIN recipes AS r ON i.recipe_id = r.id
-                WHERE r.attribute = %s AND i.name IN ({placeholders})
-                LIMIT 20;
-            """
-            params = [selected_attribute] + keywords
+        if not candidate_ids:
+             return render_template('results.html', recipes=[], query=search_query)
 
-        cursor.execute(sql_get_ids, params)
-        recipe_ids_20 = [row['recipe_id'] for row in cursor.fetchall()]
+        # Part 2: Exclusions (NOT logic)
+        final_candidates = candidates
+        if exclusions:
+            if not candidate_ids:
+                final_candidates = []
+            else:
+                placeholders_exc = ', '.join(['%s'] * len(exclusions))
+                placeholders_cand = ', '.join(['%s'] * len(candidate_ids))
+                
+                # Find which of the candidate_ids contain any of the exclusions
+                sql_exclusions = f"""
+                    SELECT DISTINCT i.recipe_id
+                    FROM ingredients AS i
+                    WHERE i.recipe_id IN ({placeholders_cand})
+                    AND i.name IN ({placeholders_exc})
+                """
+                params_exc = candidate_ids + exclusions
+                
+                cursor.execute(sql_exclusions, params_exc)
+                excluded_ids = set([row['recipe_id'] for row in cursor.fetchall()])
+                
+                final_candidates = [row for row in candidates if row['recipe_id'] not in excluded_ids]
+
+        # Calculate total count (matches across ALL attributes)
+        total_count = len(final_candidates)
+
+        # Normalize attributes in candidates (convert full-width to half-width)
+        import unicodedata
+        for row in final_candidates:
+            if row['attribute']:
+                row['attribute'] = unicodedata.normalize('NFKC', row['attribute'])
+
+        # Check which attributes have results
+        available_attributes = set(row['attribute'] for row in final_candidates)
+        
+        # Strict filtering: Only allow 'cookpad' or 'rakuten'
+        valid_attributes = {'cookpad', 'rakuten'}
+        
+        # Filter available attributes to only valid ones
+        available_valid_attributes = available_attributes.intersection(valid_attributes)
+        
+        if available_valid_attributes:
+            if selected_attribute not in available_valid_attributes:
+                # If selected attribute is not available, pick another valid one
+                selected_attribute = list(available_valid_attributes)[0]
+        else:
+            # If neither cookpad nor rakuten are available, but we have results (e.g. cookpad_niigataken),
+            # we should probably return empty or handle it.
+            # User request: "cookpadまたはrakutenに完全一致したattributeにしてほしい"
+            # So if neither is available, we return empty list for display?
+            # Or do we just stick to selected_attribute and return empty?
+            # Let's assume we strictly filter.
+            pass
+
+        # Filter by selected attribute for display
+        final_ids = [row['recipe_id'] for row in final_candidates if row['attribute'] == selected_attribute]
+
+        recipe_ids_20 = final_ids[:20]
+
+
         # ▼▼▼ 追加：normalized_name = 'null' を含むレシピを除外 ▼▼▼
         if recipe_ids_20:
             placeholders = ', '.join(['%s'] * len(recipe_ids_20))
@@ -126,7 +342,7 @@ def search():
         # ▲▲▲ 追加ここまで ▲▲▲
 
         if not recipe_ids_20:
-            return render_template('results.html', recipes=[], query=search_query)
+            return render_template('results.html', recipes=[], query=search_query, search_mode=search_mode, total_count=total_count)
 
         random.shuffle(recipe_ids_20)
         recipe_ids = recipe_ids_20[:10]
@@ -247,7 +463,11 @@ def search():
         recipes_list = process_recipe_rows(recipes_dict)
         # ▲▲▲ ここまで修正 ▲▲▲
 
-        return render_template('results.html', recipes=recipes_list, query=search_query)
+        # Reconstruct query for display (to show unified tags)
+        display_query_parts = unified_inclusions + ['-' + exc for exc in exclusions]
+        display_query = ' '.join(display_query_parts)
+
+        return render_template('results.html', recipes=recipes_list, query=display_query, search_mode=search_mode, total_count=total_count)
 
     except Exception as e:
         app.logger.error(f"Error in search: {e}")
@@ -482,6 +702,10 @@ def standard_search():
     search_query = request.form['query']
     search_mode = request.form.get('search_mode', 'recipe')
 
+    # クエリをキーワードに分割（全角スペースも考慮）
+    normalized_query = search_query.replace('　', ' ')
+    keywords = normalized_query.split()
+
     conn = None
     try:
         conn = get_db_connection()
@@ -493,29 +717,103 @@ def standard_search():
         recipes_data = {} # recipe_id -> {details}
         recipe_ids = []
 
+        if not keywords:
+             # キーワードがない場合は空の結果を返す
+             return render_template('standard_recipes.html', query=search_query, basic_recipes=[], cooking_time_map=COOKING_TIME_MAP, search_mode=search_mode)
+
+        # Separate inclusions and exclusions
+        raw_inclusions = [k for k in keywords if not k.startswith('-')]
+        exclusions = [k[1:] for k in keywords if k.startswith('-') and len(k) > 1]
+
+        if not raw_inclusions and not exclusions:
+             return render_template('standard_recipes.html', query=search_query, basic_recipes=[], cooking_time_map=COOKING_TIME_MAP, search_mode=search_mode)
+
         if search_mode == 'ingredient':
-            # 材料名で検索
-            # standard_recipe_ingredients から検索
-            sql_search_ingredients = """
-                SELECT DISTINCT standard_recipe_id
-                FROM standard_recipe_ingredients
-                WHERE ingredient_name LIKE %s
-            """
-            cursor.execute(sql_search_ingredients, (f"%{search_query}%",))
-            recipe_ids = [row['standard_recipe_id'] for row in cursor.fetchall()]
+            # 材料名で検索 (AND検索 + NOT検索)
+            # 1. Inclusions: 各キーワードを normalized_name に変換し、それを含むレシピIDの積集合をとる
             
-            # 該当するレシピがなければ終了
+            candidate_ids_sets = []
+            
+            # Inclusions処理
+            if raw_inclusions:
+                for keyword in raw_inclusions:
+                    # Try to get normalized name
+                    normalized_name = get_normalized_name(cursor, keyword)
+                    
+                    if normalized_name:
+                        # normalized_name がある場合は完全一致で検索
+                        cursor.execute("SELECT DISTINCT standard_recipe_id FROM standard_recipe_ingredients WHERE ingredient_name = %s", (normalized_name,))
+                    else:
+                        # ない場合は部分一致で検索
+                        cursor.execute("SELECT DISTINCT standard_recipe_id FROM standard_recipe_ingredients WHERE ingredient_name LIKE %s", (f"%{keyword}%",))
+                    
+                    ids = {row['standard_recipe_id'] for row in cursor.fetchall()}
+                    candidate_ids_sets.append(ids)
+                
+                if candidate_ids_sets:
+                    # 積集合をとる (AND)
+                    common_ids = candidate_ids_sets[0]
+                    for other_ids in candidate_ids_sets[1:]:
+                        common_ids &= other_ids
+                    recipe_ids = list(common_ids)
+                else:
+                    # inclusionsがあるのにヒットなしなら結果0
+                    recipe_ids = []
+            else:
+                # inclusionsがない場合（exclusionsのみ）、全レシピを対象とするか？
+                # ここでは全レシピIDを取得する（件数が多い場合はLIMITが必要かもしれないが、standard_recipesはそこまで多くないと想定）
+                cursor.execute("SELECT id FROM standard_recipes")
+                recipe_ids = [row['id'] for row in cursor.fetchall()]
+
+            # 2. Exclusions処理 (NOT)
+            if recipe_ids and exclusions:
+                excluded_ids = set()
+                for keyword in exclusions:
+                    normalized_name = get_normalized_name(cursor, keyword)
+                    if normalized_name:
+                         cursor.execute("SELECT DISTINCT standard_recipe_id FROM standard_recipe_ingredients WHERE ingredient_name = %s", (normalized_name,))
+                    else:
+                         cursor.execute("SELECT DISTINCT standard_recipe_id FROM standard_recipe_ingredients WHERE ingredient_name LIKE %s", (f"%{keyword}%",))
+                    
+                    for row in cursor.fetchall():
+                        excluded_ids.add(row['standard_recipe_id'])
+                
+                # 除外
+                recipe_ids = [rid for rid in recipe_ids if rid not in excluded_ids]
+
             if not recipe_ids:
                  return render_template('standard_recipes.html', query=search_query, basic_recipes=[], cooking_time_map=COOKING_TIME_MAP, search_mode=search_mode)
 
         else: # recipe name search
-            # レシピ名（category_medium）で検索
-            sql_search_recipes = """
+            # レシピ名（category_medium）で検索 (AND検索 + NOT検索)
+            
+            # Inclusions (AND)
+            conditions = []
+            params = []
+            
+            if raw_inclusions:
+                for keyword in raw_inclusions:
+                    conditions.append("category_medium LIKE %s")
+                    params.append(f"%{keyword}%")
+            
+            # Exclusions (AND NOT)
+            if exclusions:
+                for keyword in exclusions:
+                    conditions.append("category_medium NOT LIKE %s")
+                    params.append(f"%{keyword}%")
+
+            if not conditions:
+                 # 条件なし
+                 return render_template('standard_recipes.html', query=search_query, basic_recipes=[], cooking_time_map=COOKING_TIME_MAP, search_mode=search_mode)
+
+            where_clause = " AND ".join(conditions)
+            
+            sql_search_recipes = f"""
                 SELECT id
                 FROM standard_recipes
-                WHERE category_medium LIKE %s
+                WHERE {where_clause}
             """
-            cursor.execute(sql_search_recipes, (f"%{search_query}%",))
+            cursor.execute(sql_search_recipes, tuple(params))
             recipe_ids = [row['id'] for row in cursor.fetchall()]
 
             if not recipe_ids:
@@ -588,14 +886,18 @@ def standard_search():
         
         if search_mode == 'ingredient':
             # ヒット件数計算
-            # 検索クエリにマッチする材料のカウント合計を計算
+            # 検索クエリ（inclusions）にマッチする材料のカウント合計を計算
             recipes_with_score = []
             for r_id, details in recipes_data.items():
                 hit_count = 0
                 for group_data in details['ingredient'].values():
                     for name, count_list in group_data.items():
-                        if name != 'all' and search_query in name: # 部分一致で簡易判定
-                             hit_count += count_list[0]
+                        if name != 'all':
+                            # 各キーワードについてマッチするか確認
+                            for kw in raw_inclusions:
+                                if kw in name:
+                                    hit_count += count_list[0]
+                                    break # 1つの材料につき1回カウント（重複カウント防止）
                 recipes_with_score.append((details['name'], details, hit_count))
             
             # スコア順にソート
@@ -607,9 +909,13 @@ def standard_search():
             sorted_items = sorted(recipes_data.values(), key=lambda x: x['recipe_count'], reverse=True)
             final_recipes_list = [(item['name'], item) for item in sorted_items]
 
+        total_count = len(final_recipes_list)
+        final_recipes_list = final_recipes_list[:5]
+
         return render_template('standard_recipes.html',
                                query=search_query,
                                basic_recipes=final_recipes_list,
+                               total_count=total_count,
                                cooking_time_map=COOKING_TIME_MAP,
                                search_mode=search_mode)
 
