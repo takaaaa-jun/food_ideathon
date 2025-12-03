@@ -468,93 +468,157 @@ def process_recipe_rows(recipes_dict):
 
 # --- 基礎レシピ関連のルート ---
 # (変更なし)
-@app.route('/basic_search_home')
-def basic_search_home():
+# --- 基礎レシピ関連のルート ---
+
+@app.route('/standard_search_home')
+def standard_search_home():
     """基礎レシピの検索ページを表示する"""
-    return render_template('basic_search_home.html')
+    return render_template('standard_search_home.html')
 
 
-@app.route('/basic_search', methods=['POST'])
-def basic_search():
+@app.route('/standard_search', methods=['POST'])
+def standard_search():
     """基礎レシピを検索し、結果を表示する"""
     search_query = request.form['query']
     search_mode = request.form.get('search_mode', 'recipe')
 
+    conn = None
     try:
-        with open('0_base_recipe.json', 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        all_recipes = data.get('recipes', {})
+        conn = get_db_connection()
+        if not conn:
+             return render_template('standard_recipes.html', query=search_query, error="データベースに接続できませんでした．", search_mode=search_mode, basic_recipes=[], cooking_time_map={})
+
+        cursor = conn.cursor(dictionary=True)
         
-        sorted_recipes = [] 
+        recipes_data = {} # recipe_id -> {details}
+        recipe_ids = []
 
         if search_mode == 'ingredient':
-            conn = None
-            try:
-                conn = get_db_connection()
-                if not conn:
-                    return render_template('basic_recipes.html', query=search_query, error="データベースに接続できませんでした．", search_mode=search_mode, basic_recipes=[], cooking_time_map={})
-
-                cursor = conn.cursor(dictionary=True)
-                
-                sql_get_normalized_names = """
-                    SELECT DISTINCT normalized_name 
-                    FROM ingredient_structured
-                    WHERE name LIKE %s;
-                """
-                search_pattern = f"{search_query}%" 
-                cursor.execute(sql_get_normalized_names, (search_pattern,))
-                
-                normalized_names = {row['normalized_name'] for row in cursor.fetchall() if row['normalized_name']}
-                
-                recipes_with_hit_count = []
-                if normalized_names:
-                    for recipe_name, details in all_recipes.items():
-                        max_hit_count = 0
-                        ingredient_categories = details.get('ingredient', {})
-                        for category_data in ingredient_categories.values():
-                            for norm_name_in_json, count_list in category_data.items():
-                                if norm_name_in_json in normalized_names:
-                                    max_hit_count = max(max_hit_count, count_list[0])
-                        
-                        if max_hit_count > 0:
-                            recipes_with_hit_count.append((recipe_name, details, max_hit_count))
-
-                sorted_recipes_tuple = sorted(
-                    recipes_with_hit_count, 
-                    key=lambda item: item[2], 
-                    reverse=True
-                )
-                sorted_recipes = [(item[0], item[1]) for item in sorted_recipes_tuple]
+            # 材料名で検索
+            # standard_recipe_ingredients から検索
+            sql_search_ingredients = """
+                SELECT DISTINCT standard_recipe_id
+                FROM standard_recipe_ingredients
+                WHERE ingredient_name LIKE %s
+            """
+            cursor.execute(sql_search_ingredients, (f"%{search_query}%",))
+            recipe_ids = [row['standard_recipe_id'] for row in cursor.fetchall()]
             
-            finally:
-                if conn and conn.is_connected():
-                    cursor.close()
-                    conn.close()
+            # 該当するレシピがなければ終了
+            if not recipe_ids:
+                 return render_template('standard_recipes.html', query=search_query, basic_recipes=[], cooking_time_map=COOKING_TIME_MAP, search_mode=search_mode)
 
-        else: # search_mode == 'recipe'
-            filtered_items = {
-                recipe_name: details for recipe_name, details in all_recipes.items()
-                if search_query in recipe_name
-            }.items()
-            
-            sorted_recipes = sorted(
-                filtered_items, 
-                key=lambda item: item[1].get('recipe_count', 0), 
-                reverse=True
-            )
+        else: # recipe name search
+            # レシピ名（category_medium）で検索
+            sql_search_recipes = """
+                SELECT id
+                FROM standard_recipes
+                WHERE category_medium LIKE %s
+            """
+            cursor.execute(sql_search_recipes, (f"%{search_query}%",))
+            recipe_ids = [row['id'] for row in cursor.fetchall()]
+
+            if not recipe_ids:
+                 return render_template('standard_recipes.html', query=search_query, basic_recipes=[], cooking_time_map=COOKING_TIME_MAP, search_mode=search_mode)
+
+        # レシピ詳細情報の取得
+        # 取得したIDに基づいて standard_recipes 情報を取得
+        placeholders = ','.join(['%s'] * len(recipe_ids))
+        sql_get_recipes = f"""
+            SELECT * FROM standard_recipes WHERE id IN ({placeholders})
+        """
+        cursor.execute(sql_get_recipes, recipe_ids)
+        recipes_rows = cursor.fetchall()
+
+        for row in recipes_rows:
+            recipes_data[row['id']] = {
+                'name': row['category_medium'],
+                'recipe_count': row['recipe_count'],
+                'cooking_time': [row['cooking_time']], # リストにする
+                'steps': {'average_steps': row['average_steps']},
+                'ingredient': {}
+            }
+
+        # 材料情報の取得
+        sql_get_ingredients = f"""
+            SELECT * FROM standard_recipe_ingredients WHERE standard_recipe_id IN ({placeholders})
+        """
+        cursor.execute(sql_get_ingredients, recipe_ids)
+        ingredients_rows = cursor.fetchall()
+
+        for row in ingredients_rows:
+            r_id = row['standard_recipe_id']
+            if r_id in recipes_data:
+                group = row['group_name']
+                name = row['ingredient_name']
+                count = row['count']
+                
+                if group not in recipes_data[r_id]['ingredient']:
+                    recipes_data[r_id]['ingredient'][group] = {'all': [0]} # allの初期化
+                
+                recipes_data[r_id]['ingredient'][group][name] = [count]
+                recipes_data[r_id]['ingredient'][group]['all'][0] += count
+
+        # 手順情報の取得 (追加)
+        sql_get_steps = f"""
+            SELECT * FROM standard_recipe_steps WHERE standard_recipe_id IN ({placeholders})
+            ORDER BY count DESC
+        """
+        cursor.execute(sql_get_steps, recipe_ids)
+        steps_rows = cursor.fetchall()
+
+        for row in steps_rows:
+            r_id = row['standard_recipe_id']
+            if r_id in recipes_data:
+                if 'standard_steps' not in recipes_data[r_id]:
+                    recipes_data[r_id]['standard_steps'] = []
+                
+                recipes_data[r_id]['standard_steps'].append({
+                    'food_name': row['food_name'],
+                    'action': row['action'],
+                    'count': row['count']
+                })
+
+        # テンプレートに渡す形式に変換 (リストのタプル: [(name, details), ...])
+        # ソート順: 
+        #  - レシピ検索: recipe_count 降順 (元のロジック準拠)
+        #  - 材料検索: ヒットした材料のカウント合計が多い順 (元のロジック準拠)
         
-        return render_template('basic_recipes.html',
+        final_recipes_list = []
+        
+        if search_mode == 'ingredient':
+            # ヒット件数計算
+            # 検索クエリにマッチする材料のカウント合計を計算
+            recipes_with_score = []
+            for r_id, details in recipes_data.items():
+                hit_count = 0
+                for group_data in details['ingredient'].values():
+                    for name, count_list in group_data.items():
+                        if name != 'all' and search_query in name: # 部分一致で簡易判定
+                             hit_count += count_list[0]
+                recipes_with_score.append((details['name'], details, hit_count))
+            
+            # スコア順にソート
+            sorted_recipes_tuple = sorted(recipes_with_score, key=lambda x: x[2], reverse=True)
+            final_recipes_list = [(item[0], item[1]) for item in sorted_recipes_tuple]
+
+        else:
+            # レシピ数順にソート
+            sorted_items = sorted(recipes_data.values(), key=lambda x: x['recipe_count'], reverse=True)
+            final_recipes_list = [(item['name'], item) for item in sorted_items]
+
+        return render_template('standard_recipes.html',
                                query=search_query,
-                               basic_recipes=sorted_recipes,
+                               basic_recipes=final_recipes_list,
                                cooking_time_map=COOKING_TIME_MAP,
                                search_mode=search_mode)
 
-    except FileNotFoundError:
-        return "基礎レシピファイル (0_base_recipe.json) が見つかりません．", 404
-    except json.JSONDecodeError:
-        return "基礎レシピファイル (0_base_recipe.json) の形式が正しくありません．", 500
     except mysql.connector.Error as err:
-         return render_template('basic_recipes.html', query=search_query, error=f"データベース検索中にエラーが発生しました: {err}", search_mode=search_mode, basic_recipes=[], cooking_time_map={})
+         return render_template('standard_recipes.html', query=search_query, error=f"データベースエラー: {err}", search_mode=search_mode, basic_recipes=[], cooking_time_map={})
+    finally:
+        if conn and conn.is_connected():
+            cursor.close()
+            conn.close()
 
 # --- ローカル実行用の起動設定 ---
 if __name__ == '__main__':
