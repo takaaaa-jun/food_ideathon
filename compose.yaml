@@ -7,18 +7,20 @@ services:
       - ./infra/nginx/app.conf:/etc/nginx/conf.d/app.conf:ro
     depends_on:
       - app
-    networks: [frontend]
+    networks: [ frontend ]
     restart: unless-stopped
 
   app:
     build:
       context: ./apps/web
-    env_file: [.env]
+    env_file: [ .env ]
     expose:
       - "8000"
     depends_on:
       - db
-    networks: [frontend, backend]
+    networks: [ frontend, backend ]
+    volumes:
+      - ./apps/web/logs:/app/logs
     restart: unless-stopped
 
   db:
@@ -32,11 +34,12 @@ services:
       - db_data:/var/lib/mysql
     expose:
       - "3306"
-    networks: [backend]
+    networks: [ backend ]
     restart: unless-stopped
 
 volumes:
   db_data:
+
 
 networks:
   frontend:

@@ -3,11 +3,96 @@ import random
 import os
 import json
 import mysql.connector
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, g, jsonify
+import logging
+import time
+import datetime
+import psutil
+import uuid
+from werkzeug.middleware.proxy_fix import ProxyFix
 # import socket # ローカル実行のためコメントアウト
 
 # Flaskアプリケーションの初期化
 app = Flask(__name__)
+# プロキシ配下での動作に対応（X-Forwarded-Forなどを処理）
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
+# --- ロギング設定 ---
+log_dir = os.path.join(os.path.dirname(__file__), 'logs')
+os.makedirs(log_dir, exist_ok=True)
+
+# ログの時刻をJSTにするための設定
+def jst_converter(*args):
+    return datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))).timetuple()
+
+logging.Formatter.converter = jst_converter
+
+logging.basicConfig(
+    filename=os.path.join(log_dir, 'app.log'),
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    filemode='a'
+)
+
+@app.before_request
+def before_request():
+    g.start_time = time.time()
+    
+    # CookieからユーザーIDを取得、なければ新規生成
+    user_id = request.cookies.get('user_id')
+    if not user_id:
+        user_id = str(uuid.uuid4())
+        g.set_new_user_id = True
+    else:
+        g.set_new_user_id = False
+    
+    g.user_id = user_id
+
+@app.after_request
+def after_request(response):
+    if request.path.startswith('/static'):
+        return response
+
+    diff = time.time() - g.start_time
+    cpu_percent = psutil.cpu_percent(interval=None)
+    
+    log_data = {
+        'method': request.method,
+        'path': request.path,
+        'status': response.status_code,
+        'duration_sec': round(diff, 4),
+        'cpu_percent': cpu_percent,
+        'ip': request.remote_addr,
+        'user_id': getattr(g, 'user_id', 'unknown')
+    }
+
+    if getattr(g, 'set_new_user_id', False):
+        # 1年間有効なCookieを設定
+        expires = datetime.datetime.now() + datetime.timedelta(days=365)
+        response.set_cookie('user_id', g.user_id, expires=expires)
+
+    # 検索単語の収集
+    if request.path == '/search' and request.method == 'POST':
+        log_data['search_query'] = request.form.get('query')
+        log_data['search_mode'] = request.form.get('search_mode')
+    elif request.path == '/standard_search' and request.method == 'POST':
+        log_data['search_query'] = request.form.get('query')
+        log_data['search_mode'] = request.form.get('search_mode')
+    
+    app.logger.info(f"ACCESS_LOG: {json.dumps(log_data, ensure_ascii=False)}")
+    return response
+
+@app.route('/api/log_action', methods=['POST'])
+def log_action():
+    try:
+        data = request.json
+        # user_idを追加
+        data['user_id'] = getattr(g, 'user_id', 'unknown')
+        app.logger.info(f"ACTION_LOG: {json.dumps(data, ensure_ascii=False)}")
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        app.logger.error(f"Error logging action: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 400
 
 # --- データベース接続情報 ---
 config_path = os.path.join(os.path.dirname(__file__), 'db_connection.cofg')

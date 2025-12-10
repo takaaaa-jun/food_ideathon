@@ -18,6 +18,7 @@ ENV/
 .coverage
 coverage.xml
 *.log
+*.csv
 
 # エディタ / OS
 .vscode/*

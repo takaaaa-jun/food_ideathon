@@ -144,7 +144,7 @@
             <input type="submit" value="検索" class="submit-button">
         </form>
         <div class="extra-links">
-            <p><a href="{{ url_for('standard_search_home') }}">基礎レシピを検索する</a></p>
+            <p><a href="{{ url_for('standard_search_home') }}">基準レシピを検索する</a></p>
         </div>
     </div>
 
@@ -153,6 +153,26 @@
         const addConditionBtn = document.getElementById('addConditionBtn');
         const searchForm = document.getElementById('searchForm');
         const finalQueryInput = document.getElementById('finalQuery');
+
+        // ログ送信関数
+        async function sendActionLog(action, details = {}) {
+            try {
+                await fetch('/api/log_action', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: action,
+                        details: details,
+                        url: window.location.href,
+                        timestamp: new Date().toISOString()
+                    })
+                });
+            } catch (error) {
+                console.error('Logging failed:', error);
+            }
+        }
 
         // 条件行を作成する関数
         function createConditionRow(isFirst = false) {
@@ -188,6 +208,7 @@
             removeBtn.className = 'remove-btn';
             removeBtn.textContent = '×';
             removeBtn.onclick = () => {
+                sendActionLog('remove_condition');
                 row.remove();
                 if (conditionsContainer.children.length === 0) {
                     createConditionRow(true);
@@ -204,6 +225,7 @@
 
         // 追加ボタン
         addConditionBtn.addEventListener('click', () => {
+            sendActionLog('add_condition');
             createConditionRow();
         });
 
@@ -233,6 +255,7 @@
             }
 
             finalQueryInput.value = queryParts.join(' ');
+            sendActionLog('search_submit', { query: finalQueryInput.value });
             searchForm.submit();
         });
     </script>
