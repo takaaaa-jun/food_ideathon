@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>基礎レシピ検索</title>
+    <title>基準レシピ検索</title>
     <style>
         body {
             font-family: sans-serif;
@@ -125,7 +125,7 @@
 </head>
 
 <body>
-    <h1>基礎レシピ検索</h1>
+    <h1>基準レシピ検索</h1>
     <p style="text-align: center;"><a href="/">← トップページに戻る</a></p>
 
     <div class="search-form">
@@ -163,6 +163,26 @@
         const searchForm = document.getElementById('searchForm');
         const finalQueryInput = document.getElementById('finalQuery');
 
+        // ログ送信関数
+        async function sendActionLog(action, details = {}) {
+            try {
+                await fetch('/api/log_action', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: action,
+                        details: details,
+                        url: window.location.href,
+                        timestamp: new Date().toISOString()
+                    })
+                });
+            } catch (error) {
+                console.error('Logging failed:', error);
+            }
+        }
+
         // 条件行を作成する関数
         function createConditionRow(isFirst = false) {
             const row = document.createElement('div');
@@ -197,6 +217,7 @@
             removeBtn.className = 'remove-btn';
             removeBtn.textContent = '×';
             removeBtn.onclick = () => {
+                sendActionLog('remove_condition_standard');
                 row.remove();
                 if (conditionsContainer.children.length === 0) {
                     createConditionRow(true);
@@ -213,6 +234,7 @@
 
         // 追加ボタン
         addConditionBtn.addEventListener('click', () => {
+            sendActionLog('add_condition_standard');
             createConditionRow();
         });
 
@@ -242,8 +264,73 @@
             }
 
             finalQueryInput.value = queryParts.join(' ');
-            searchForm.submit();
+
+            // ログ送信 (非同期完了を待たずに送信submitされる可能性があるが、UX優先で投げる)
+            // 確実にするなら await sendActionLog(...) だが、submit遅延を防ぐためfire-and-forget
+            // ただし、画面遷移でキャンセルされるリスクがあるため、submit前に少し待つか、
+            // beacon APIを使うのがベストだが、ここではindex.htmlの既存実装に合わせる
+            // (index.htmlの実装を確認すると明示的なawaitはしていないが、submitを最後に呼んでいる)
+
+            // ここでは await して送信を試みる
+            sendActionLog('search_submit_standard', { query: finalQueryInput.value }).then(() => {
+                searchForm.submit();
+            });
         });
+    </script>
+    <!-- User ID Display -->
+    <div id="user-id-display"
+        style="position: fixed; top: 20%; right: 20px; background-color: rgba(255, 255, 255, 0.9); border: 1px solid #ccc; padding: 10px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 9999; font-family: monospace; font-size: 0.9em;">
+        <div style="font-weight: bold; margin-bottom: 5px; font-size: 0.8em; color: #555;">User ID</div>
+        <div id="user-id-text" style="display:inline-block; margin-right: 5px; font-weight: bold;">{{ user_id }}</div>
+        <button onclick="copyUserId()" style="font-size: 0.8em; cursor: pointer; padding: 2px 6px;">Copy</button>
+    </div>
+    <script>
+        function copyUserId() {
+            const userId = document.getElementById('user-id-text').innerText.trim();
+            const btn = document.querySelector('#user-id-display button');
+            const originalText = btn.innerText;
+
+            const successCallback = () => {
+                btn.innerText = 'Copied!';
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                }, 2000);
+            };
+
+            const failCallback = (err) => {
+                console.error('Copy failed:', err);
+                prompt("Copy this ID:", userId);
+            };
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(userId).then(successCallback).catch(() => {
+                    fallbackCopy(userId, successCallback, failCallback);
+                });
+            } else {
+                fallbackCopy(userId, successCallback, failCallback);
+            }
+        }
+
+        function fallbackCopy(text, onSuccess, onFail) {
+            try {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-9999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                if (successful) {
+                    onSuccess();
+                } else {
+                    onFail(new Error("execCommand returned false"));
+                }
+            } catch (err) {
+                onFail(err);
+            }
+        }
     </script>
 </body>
 

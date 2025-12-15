@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>基礎レシピ検索結果: {{ query }}</title>
+    <title>基準レシピ検索結果: {{ query }}</title>
     <style>
         /* CSS from results.html */
         body {
@@ -257,7 +257,7 @@
 
 <body>
     <h1>
-        基礎レシピ検索結果: "{{ query }}"
+        基準レシピ検索結果: "{{ query }}"
         {% if search_mode == 'ingredient' %}
         <span style="font-size: 0.6em; color: #666;">(材料名検索)</span>
         {% else %}
@@ -266,7 +266,7 @@
     </h1>
     <p style="text-align: center;">
         <a href="/">← トップページに戻る</a> |
-        <a href="{{ url_for('standard_search_home') }}">基礎レシピの検索に戻る</a>
+        <a href="{{ url_for('standard_search_home') }}">基準レシピの検索に戻る</a>
     </p>
 
     <!-- Search Form (Hybrid) -->
@@ -449,7 +449,7 @@
     </div>
     {% endfor %}
     {% elif query and not error %}
-    <p style="text-align: center;">「{{ query }}」に一致する基礎レシピは見つかりませんでした．</p>
+    <p style="text-align: center;">「{{ query }}」に一致する基準レシピは見つかりませんでした．</p>
     {% endif %}
 
     <script>
@@ -662,6 +662,61 @@
             finalQueryInput.value = queryParts.join(' ');
             searchForm.submit();
         });
+    </script>
+    <!-- User ID Display -->
+    <div id="user-id-display"
+        style="position: fixed; top: 20%; right: 20px; background-color: rgba(255, 255, 255, 0.9); border: 1px solid #ccc; padding: 10px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 9999; font-family: monospace; font-size: 0.9em;">
+        <div style="font-weight: bold; margin-bottom: 5px; font-size: 0.8em; color: #555;">User ID</div>
+        <div id="user-id-text" style="display:inline-block; margin-right: 5px; font-weight: bold;">{{ user_id }}</div>
+        <button onclick="copyUserId()" style="font-size: 0.8em; cursor: pointer; padding: 2px 6px;">Copy</button>
+    </div>
+    <script>
+        function copyUserId() {
+            const userId = document.getElementById('user-id-text').innerText.trim();
+            const btn = document.querySelector('#user-id-display button');
+            const originalText = btn.innerText;
+
+            const successCallback = () => {
+                btn.innerText = 'Copied!';
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                }, 2000);
+            };
+
+            const failCallback = (err) => {
+                console.error('Copy failed:', err);
+                prompt("Copy this ID:", userId);
+            };
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(userId).then(successCallback).catch(() => {
+                    fallbackCopy(userId, successCallback, failCallback);
+                });
+            } else {
+                fallbackCopy(userId, successCallback, failCallback);
+            }
+        }
+
+        function fallbackCopy(text, onSuccess, onFail) {
+            try {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-9999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                if (successful) {
+                    onSuccess();
+                } else {
+                    onFail(new Error("execCommand returned false"));
+                }
+            } catch (err) {
+                onFail(err);
+            }
+        }
     </script>
 </body>
 

@@ -3,7 +3,7 @@ import random
 import os
 import json
 import mysql.connector
-from flask import Flask, render_template, request, g, jsonify
+from flask import Flask, render_template, request, g, jsonify, url_for
 import logging
 import time
 import datetime
@@ -48,6 +48,10 @@ def before_request():
     
     g.user_id = user_id
 
+@app.context_processor
+def inject_user_id():
+    return dict(user_id=getattr(g, 'user_id', 'unknown'))
+
 @app.after_request
 def after_request(response):
     if request.path.startswith('/static'):
@@ -74,10 +78,12 @@ def after_request(response):
     # 検索単語の収集
     if request.path == '/search' and request.method == 'POST':
         log_data['search_query'] = request.form.get('query')
-        log_data['search_mode'] = request.form.get('search_mode')
+        # インデックス/結果ページの検索は 'personal' とする
+        log_data['search_mode'] = 'personal'
     elif request.path == '/standard_search' and request.method == 'POST':
         log_data['search_query'] = request.form.get('query')
-        log_data['search_mode'] = request.form.get('search_mode')
+        # 標準レシピ検索は 'standard' とする
+        log_data['search_mode'] = 'standard'
     
     app.logger.info(f"ACCESS_LOG: {json.dumps(log_data, ensure_ascii=False)}")
     return response
@@ -561,100 +567,7 @@ def search():
 # ▼▼▼ 新規ルート追加 ▼▼▼
 @app.route('/search_supplement', methods=['GET'])
 def search_supplement():
-    try:
-        missing_calories = float(request.args.get('missing_calories', 0))
-        
-        if missing_calories <= 0:
-             return render_template('results.html', error="不足カロリーが正しく指定されていません。")
-
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-
-        # 全レシピを取得し、不足カロリーに近い順にソートするクエリ
-        # normalized_name = 'null' の除外も適用
-        # パフォーマンス向上のため、必要なカラムのみ取得してPython側で計算・ソートするか、
-        # あるいはSQLで計算するか。ここではSQLで計算してソートする。
-        # ただし、詳細情報（材料など）も表示する必要があるため、2段階で取得する。
-        
-        # 1. 対象レシピIDを取得
-        # GROUP BYエラーを回避するため、JOINではなくサブクエリを使用
-        sql_find_ids = """
-            SELECT 
-                rni.recipe_id,
-                ABS((rni.calories / rni.serving_size) - %s) AS diff
-            FROM recipe_nutrition_info AS rni
-            WHERE rni.serving_size > 0
-            AND rni.recipe_id IN (
-                SELECT DISTINCT i.recipe_id 
-                FROM ingredients AS i
-                JOIN ingredient_structured AS ist ON i.id = ist.ingredient_id
-                WHERE ist.normalized_name != 'null'
-            )
-            ORDER BY diff ASC
-            LIMIT 20
-        """
-        
-        cursor.execute(sql_find_ids, (missing_calories,))
-        target_recipes = cursor.fetchall()
-        
-        if not target_recipes:
-             cursor.close()
-             conn.close()
-             return render_template('results.html', recipes=[], query=f"不足 {missing_calories:.1f} kcal を補うレシピ")
-
-        recipe_ids = [row['recipe_id'] for row in target_recipes]
-        placeholders = ','.join(['%s'] * len(recipe_ids))
-        
-        # 2. 詳細情報を取得（search関数と同じクエリを使用）
-        sql_get_details = f"""
-            SELECT
-                r.id, r.title, r.description,
-                r.cooking_time, r.serving_for,
-                i.id AS ingredient_id,
-                i.name AS ingredient_name, i.quantity,
-                s.position, s.memo AS step_memo,
-                
-                ist.normalized_name,
-                iu.normalized_quantity,
-                n.enerc_kcal,
-                n.prot,
-                n.fat,
-                n.choavldf,
-                n.fib,
-
-                rni.serving_size,
-                rni.calories AS total_calories,
-                rni.protein AS total_protein,
-                rni.fat AS total_fat,
-                rni.carbohydrates AS total_carbohydrates
-            FROM recipes AS r
-            LEFT JOIN ingredients AS i ON r.id = i.recipe_id
-            LEFT JOIN steps AS s ON r.id = s.recipe_id
-            LEFT JOIN ingredient_structured AS ist ON i.id = ist.ingredient_id
-            LEFT JOIN ingredient_units AS iu ON i.id = iu.ingredient_id
-            LEFT JOIN nutritions AS n ON ist.normalized_name = n.name COLLATE utf8mb4_general_ci
-            LEFT JOIN recipe_nutrition_info AS rni ON r.id = rni.recipe_id
-            WHERE r.id IN ({placeholders})
-            ORDER BY FIELD(r.id, {placeholders}), i.id, s.position ASC;
-        """
-        
-        # ORDER BY FIELD を使って、diff順（recipe_idsの順序）を維持する
-        params = recipe_ids + recipe_ids # IN句用 + FIELD関数用
-        cursor.execute(sql_get_details, params)
-        all_rows = cursor.fetchall()
-        
-        cursor.close()
-        conn.close()
-
-        # データ構築処理（共通化したいが、まずはここに記述し、後でリファクタリングも検討）
-        recipes_dict = build_recipes_dict(all_rows)
-        recipes_list = process_recipe_rows(recipes_dict)
-
-        return render_template('results.html', recipes=recipes_list, query=f"不足 {missing_calories:.1f} kcal を補うレシピ")
-
-    except Exception as e:
-        app.logger.error(f"Error in search_supplement: {e}")
-        return render_template('results.html', error="検索中にエラーが発生しました。")
+    return render_template('results.html', error="現在、不足分の栄養検索機能は停止しています。")
 
 # ▼▼▼ ヘルパー関数 ▼▼▼
 def build_recipes_dict(all_rows):

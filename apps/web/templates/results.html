@@ -313,7 +313,7 @@
         <div class="nutrition-totals">
             <h3>レシピ全体の栄養素 (推定値)</h3>
             <ul>
-                <li><span class="label">カロリー:</span> <span class="value">{{
+                <li><span class="label">エネルギー:</span> <span class="value">{{
                         "%.1f"|format(recipe.nutrition_totals.energy) }} kcal</span></li>
                 <li><span class="label">たんぱく質:</span> <span class="value">{{
                         "%.1f"|format(recipe.nutrition_totals.protein) }} g</span></li>
@@ -332,7 +332,7 @@
             <h3>1人分の栄養素 ({{ recipe.serving_size }}人分として計算)</h3>
             <ul>
                 <li>
-                    <span class="label">カロリー:</span>
+                    <span class="label">エネルギー:</span>
                     <span class="value">
                         {{ "%.1f"|format(recipe.nutrition_per_serving.energy) }} / {{
                         recipe.standards.energy }}
@@ -365,13 +365,15 @@
                 </li>
             </ul>
 
+            {% if 0 %}
             {% if recipe.standards.energy > recipe.nutrition_per_serving.energy %}
             <div style="margin-top: 15px;">
                 <a href="/search_supplement?missing_calories={{ recipe.standards.energy - recipe.nutrition_per_serving.energy }}"
                     style="background-color: #28a745; color: white; padding: 8px 12px; border-radius: 4px; font-size: 0.9em; text-decoration: none; display: inline-block;">
-                    不足分の栄養（カロリー）から検索
+                    不足分の栄養（エネルギー）から検索
                 </a>
             </div>
+            {% endif %}
             {% endif %}
         </div>
         {% endif %}
@@ -425,6 +427,61 @@
     <p style="color: red; text-align: center;">{{ error }}</p>
     {% endif %}
 
+    <!-- User ID Display -->
+    <div id="user-id-display"
+        style="position: fixed; top: 20%; right: 20px; background-color: rgba(255, 255, 255, 0.9); border: 1px solid #ccc; padding: 10px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 9999; font-family: monospace; font-size: 0.9em;">
+        <div style="font-weight: bold; margin-bottom: 5px; font-size: 0.8em; color: #555;">User ID</div>
+        <div id="user-id-text" style="display:inline-block; margin-right: 5px; font-weight: bold;">{{ user_id }}</div>
+        <button onclick="copyUserId()" style="font-size: 0.8em; cursor: pointer; padding: 2px 6px;">Copy</button>
+    </div>
+    <script>
+        function copyUserId() {
+            const userId = document.getElementById('user-id-text').innerText.trim();
+            const btn = document.querySelector('#user-id-display button');
+            const originalText = btn.innerText;
+
+            const successCallback = () => {
+                btn.innerText = 'Copied!';
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                }, 2000);
+            };
+
+            const failCallback = (err) => {
+                console.error('Copy failed:', err);
+                prompt("Copy this ID:", userId);
+            };
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(userId).then(successCallback).catch(() => {
+                    fallbackCopy(userId, successCallback, failCallback);
+                });
+            } else {
+                fallbackCopy(userId, successCallback, failCallback);
+            }
+        }
+
+        function fallbackCopy(text, onSuccess, onFail) {
+            try {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-9999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                if (successful) {
+                    onSuccess();
+                } else {
+                    onFail(new Error("execCommand returned false"));
+                }
+            } catch (err) {
+                onFail(err);
+            }
+        }
+    </script>
 </body>
 
 <script>

@@ -40,6 +40,8 @@ class LogTestCase(unittest.TestCase):
             self.assertIn('ACCESS_LOG', content)
             self.assertIn(unique_query, content)
             self.assertIn('cpu_percent', content)
+            # search_mode が 'personal' になっているか確認
+            self.assertIn('"search_mode": "personal"', content)
 
     def test_ip_address(self):
         # プロキシ経由のリクエストをシミュレーション
@@ -73,7 +75,14 @@ class LogTestCase(unittest.TestCase):
         
         # 2. 2回目リクエスト：Cookieあり -> 同じIDが維持され、Set-Cookieされない（または同じID）はず
         # test_clientでcookieを送信する
-        self.app.set_cookie('localhost', 'user_id', user_id_cookie)
+        # set_cookie(key, value='', ...) for typical client usage or set_cookie(server_name, key, value) for test client?
+        # Flask test client set_cookie signature: set_cookie(server_name, key, value, ...)
+        # The error says "takes from 2 to 3 positional arguments but 4 were given". self.app is test_client.
+        # It seems I am verifying the logic but using it wrong. 
+        # Correct usage: client.set_cookie('localhost', 'user_id', user_id_cookie) should work if methods match.
+        # But maybe 'localhost' is implicit or positional args are different in this version.
+        # Let's try specifying keyword args or checking signature.
+        self.app.set_cookie('user_id', user_id_cookie)
         response2 = self.app.get('/')
         self.assertEqual(response2.status_code, 200)
         
