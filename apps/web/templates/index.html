@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>レシピ検索</title>
+    <title>レシピ検索サイト</title>
     <style>
         body {
             font-family: sans-serif;
@@ -125,7 +125,7 @@
 </head>
 
 <body>
-    <h1>レシピ検索エンジン</h1>
+    <h1>パーソナルレシピ検索</h1>
     <div class="search-form">
         <form id="searchForm" action="/search" method="post">
             <p class="search-note">
@@ -145,6 +145,7 @@
         </form>
         <div class="extra-links">
             <p><a href="{{ url_for('standard_search_home') }}">基準レシピを検索する</a></p>
+            <p><a href="{{ url_for('nutrition_calculation') }}">栄養計算ツールを使う</a></p>
         </div>
     </div>
 

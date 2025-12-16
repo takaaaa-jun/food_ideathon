@@ -252,6 +252,10 @@
             margin: 0 10px;
             cursor: pointer;
         }
+
+        .initially-hidden {
+            display: none;
+        }
     </style>
 </head>
 
@@ -429,8 +433,8 @@
             {% if details.standard_steps %}
             <ul class="steps-list" data-recipe-index="{{ loop.index0 }}">
                 {% for step in details.standard_steps %}
-                <li class="step-item" data-index="{{ loop.index0 }}"
-                    style="display: {% if loop.index0 < 20 %}list-item{% else %}none{% endif %};">
+                <li class="step-item {% if loop.index0 >= 20 %}initially-hidden{% endif %}"
+                    data-index="{{ loop.index0 }}">
                     ({{ step.food_name }}, {{ step.action }}) ({{ step.count }}件)
                 </li>
                 {% endfor %}

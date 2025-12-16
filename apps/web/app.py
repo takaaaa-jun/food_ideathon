@@ -2,6 +2,7 @@ import sys
 import random
 import os
 import json
+import csv
 import mysql.connector
 from flask import Flask, render_template, request, g, jsonify, url_for
 import logging
@@ -925,5 +926,86 @@ def standard_search():
             conn.close()
 
 # --- ローカル実行用の起動設定 ---
+# ▲▲▲ ヘルパー関数ここまで ▲▲▲
+
+# --- 主食（固定値）の設定 ---
+# ユーザー様へ: 以下の栄養素の数値を修正してください
+# 入力欄をコード内で作成しました
+STAPLE_FOODS = [
+    {
+        'id': 'staple_1',
+        'name': '白米茶碗1杯', # こめ　［水稲めし］　精白米　うるち米
+        'unit': '杯',
+        'energy': 234,
+        'protein': 3.75,
+        'fat': 0.45,
+        'carbs': 54.15
+    },
+    {
+        'id': 'staple_2',
+        'name': '食パン6枚切り1枚', # こむぎ　［パン類］　角形食パン　食パン
+        'unit': '枚',
+        'energy': 148.8,
+        'protein': 5.34,
+        'fat': 2.46,
+        'carbs': 26.46
+    },
+    {
+        'id': 'staple_3',
+        'name': '味噌汁茶碗1杯', # https://foodservice.ajinomoto.co.jp/recipepro/recipe/25984/
+        'unit': '杯',
+        'energy': 59,
+        'protein': 5.2,
+        'fat': 3.1,
+        'carbs': 3.6
+    },
+    {
+        'id': 'staple_4',
+        'name': 'コーンスープ1杯', # https://calorie.slism.jp/118004/
+        'unit': '杯',
+        'energy': 81,
+        'protein': 1.54,
+        'fat': 2.6,
+        'carbs': 12.81
+    }
+]
+
+@app.route('/nutrition_calculation')
+def nutrition_calculation():
+    """栄養計算ページを表示する"""
+    csv_path = os.path.join(os.path.dirname(__file__), 'data', 'nutrition_pre_ex.csv')
+    ingredients = []
+    
+    def safe_float(val):
+        if not val or val == '-' or val == '\\N':
+            return 0.0
+        try:
+            return float(val)
+        except ValueError:
+            return 0.0
+    
+    try:
+        with open(csv_path, 'r', encoding='utf-8') as f:
+            reader = csv.reader(f)
+            headers_jp = next(reader)
+            headers_en = next(reader)
+            
+            for row in reader:
+                if len(row) < 7: continue 
+                ingredients.append({
+                    'id': row[1],
+                    'name': row[2],
+                    'energy': safe_float(row[3]),
+                    'protein': safe_float(row[4]),
+                    'fat': safe_float(row[5]),
+                    'carbs': safe_float(row[6]),
+                })
+                
+    except Exception as e:
+        app.logger.error(f"Error reading csv: {e}")
+        return render_template('nutrition_calculation.html', error="データの読み込みに失敗しました。", ingredients=[], staple_foods=STAPLE_FOODS)
+
+    return render_template('nutrition_calculation.html', ingredients=ingredients, staple_foods=STAPLE_FOODS)
+
 if __name__ == '__main__':
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    app.run(host='0.0.0.0', port=5000, debug=True)

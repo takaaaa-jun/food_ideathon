@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>栄養計算</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 1000px;
+            margin: 2em auto;
+            padding: 0 1em;
+        }
+
+        h1,
+        h2 {
+            color: #333;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .data-section {
+            flex: 1;
+            min-width: 500px;
+        }
+
+        .calc-section {
+            flex: 1;
+            min-width: 400px;
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .selected-row {
+            background-color: #e0f7fa !important;
+        }
+
+        .input-group {
+            margin-bottom: 1em;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .input-group label {
+            font-weight: bold;
+        }
+
+        .input-group input {
+            padding: 5px;
+            width: 100px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: white;
+        }
+
+        .btn-add {
+            background-color: #28a745;
+        }
+
+        .btn-add:hover {
+            background-color: #218838;
+        }
+
+        .btn-remove {
+            background-color: #dc3545;
+            padding: 4px 8px;
+            font-size: 0.8em;
+        }
+
+        .total-row {
+            font-weight: bold;
+            background-color: #e9ecef;
+        }
+
+        /* Datatables adjustments */
+        .dataTables_wrapper .dataTables_filter {
+            margin-bottom: 15px;
+        }
+
+        table.dataTable tbody tr {
+            cursor: pointer;
+        }
+    </style>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <!-- DataTables -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+</head>
+
+<body>
+
+    <h1>栄養計算ツール</h1>
+    <p><a href="{{ url_for('index') }}">← トップに戻る</a></p>
+
+    {% if error %}
+    <p style="color: red;">{{ error }}</p>
+    {% endif %}
+
+    <div class="container">
+        <!-- List Section -->
+        <div class="data-section">
+            <h2>食品リスト (100gあたり)</h2>
+            <p>行をクリックして選択し，重量を入力して追加してください．</p>
+
+            <!-- Staple Foods Section -->
+            <div id="stapleFoodsArea"
+                style="margin-bottom: 20px; padding: 15px; border: 1px solid #bce8f1; border-radius: 4px; background-color: #d9edf7;">
+                <h3>よく使う主食 (杯数指定)</h3>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    {% for staple in staple_foods %}
+                    <div class="staple-item"
+                        style="background: white; padding: 10px; border-radius: 4px; border: 1px solid #ccc;">
+                        <div style="font-weight: bold; margin-bottom: 5px;">{{ staple.name }}</div>
+                        <div style="font-size: 0.8em; color: #666; margin-bottom: 5px;">
+                            E:{{ "%.2f"|format(staple.energy) }} P:{{ "%.2f"|format(staple.protein) }} F:{{
+                            "%.2f"|format(staple.fat) }} C:{{ "%.2f"|format(staple.carbs) }}
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <input type="number" id="qty_{{ staple.id }}" value="1" min="1" step="1"
+                                style="width: 50px;">
+                            <span>{{ staple.unit }}</span>
+                            <button class="btn btn-add btn-sm btn-staple-add" data-id="{{ staple.id }}"
+                                data-name="{{ staple.name }}" data-energy="{{ staple.energy }}"
+                                data-protein="{{ staple.protein }}" data-fat="{{ staple.fat }}"
+                                data-carbs="{{ staple.carbs }}" data-unit="{{ staple.unit }}">追加</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <table id="ingredientsTable" class="display">
+                <thead>
+                    <tr>
+                        <th>食品名</th>
+                        <th>エネル<br>ギー<br>(kcal)</th>
+                        <th>たんぱく<br>質<br>(g)</th>
+                        <th>脂質<br>(g)</th>
+                        <th>炭水<br>化物<br>(g)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in ingredients %}
+                    <tr data-id="{{ item.id }}" data-name="{{ item.name }}" data-energy="{{ item.energy }}"
+                        data-protein="{{ item.protein }}" data-fat="{{ item.fat }}" data-carbs="{{ item.carbs }}">
+                        <td>{{ item.name }}</td>
+                        <td>{{ "%.2f"|format(item.energy) }}</td>
+                        <td>{{ "%.2f"|format(item.protein) }}</td>
+                        <td>{{ "%.2f"|format(item.fat) }}</td>
+                        <td>{{ "%.2f"|format(item.carbs) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Calculation Section -->
+        <div class="calc-section">
+            <h2>現在のレシピ</h2>
+
+            <div id="selectionArea"
+                style="margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; background: white;">
+                <h3>選択中: <span id="selectedName">なし</span></h3>
+                <div class="input-group">
+                    <label for="weightInput">重量 (g):</label>
+                    <input type="number" id="weightInput" min="0" step="0.1" value="100">
+                    <button id="addBtn" class="btn btn-add" disabled>追加</button>
+                </div>
+            </div>
+
+            <table id="recipeTable">
+                <thead>
+                    <tr>
+                        <th>食品名</th>
+                        <th>量</th>
+                        <th>エネルギー</th>
+                        <th>たんぱく質</th>
+                        <th>脂質</th>
+                        <th>炭水化物</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="recipeBody">
+                    <!-- Added items will appear here -->
+                </tbody>
+                <tfoot>
+                    <tr class="total-row">
+                        <td>合計</td>
+                        <td id="totalWeight">-</td>
+                        <td id="totalEnergy">0</td>
+                        <td id="totalProtein">0</td>
+                        <td id="totalFat">0</td>
+                        <td id="totalCarbs">0</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div style="text-align: center; margin-top: 20px;">
+                <button id="decideBtn" class="btn"
+                    style="background-color: #007bff; font-size: 1.2em; padding: 10px 30px;">レシピの栄養を決定する</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            var table = $('#ingredientsTable').DataTable({
+                language: {
+                    url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/ja.json"
+                },
+                pageLength: 20,
+                lengthChange: false
+            });
+
+            // Staple Adding Function
+            function addStaple(id, name, energy, protein, fat, carbs, unit) {
+                const qtyInput = document.getElementById('qty_' + id);
+                const qty = parseFloat(qtyInput.value);
+
+                if (isNaN(qty) || qty <= 0) {
+                    alert('正しい数量を入力してください');
+                    return;
+                }
+
+                const item = {
+                    name: name,
+                    weight: qty + unit,
+                    energy: (energy * qty).toFixed(2),
+                    protein: (protein * qty).toFixed(2),
+                    fat: (fat * qty).toFixed(2),
+                    carbs: (carbs * qty).toFixed(2),
+                    isStaple: true
+                };
+
+                // Trigger logic directly here since we are in jQuery scope now, or trigger event
+                addRecipeRow(item);
+                updateTotals();
+                saveRecipe();
+
+                const currentTotals = getCurrentTotals();
+                sendActionLog('nutrition_add_item', {
+                    added_item: item,
+                    current_totals: currentTotals
+                });
+            }
+
+            // Bind click event for staple buttons
+            $('.btn-staple-add').on('click', function () {
+                const btn = $(this);
+                addStaple(
+                    btn.data('id'),
+                    btn.data('name'),
+                    parseFloat(btn.data('energy')),
+                    parseFloat(btn.data('protein')),
+                    parseFloat(btn.data('fat')),
+                    parseFloat(btn.data('carbs')),
+                    btn.data('unit')
+                );
+            });
+
+            // Listen for staple add event (Keep for compatibility if code dispatches it, though we direct called above)
+            document.addEventListener('addStapleItem', function (e) {
+                // Redundant now if we call direct, but leaving just in case
+            });
+
+            var selectedData = null;
+
+            // Row selection
+            $('#ingredientsTable tbody').on('click', 'tr', function () {
+                if ($(this).hasClass('selected-row')) {
+                    $(this).removeClass('selected-row');
+                    selectedData = null;
+                    $('#selectedName').text('なし');
+                    $('#addBtn').prop('disabled', true);
+                } else {
+                    table.$('tr.selected-row').removeClass('selected-row');
+                    $(this).addClass('selected-row');
+
+                    // Get data attributes
+                    selectedData = {
+                        id: $(this).data('id'),
+                        name: $(this).data('name'),
+                        energy: parseFloat($(this).data('energy')),
+                        protein: parseFloat($(this).data('protein')),
+                        fat: parseFloat($(this).data('fat')),
+                        carbs: parseFloat($(this).data('carbs'))
+                    };
+
+                    $('#selectedName').text(selectedData.name);
+                    $('#addBtn').prop('disabled', false);
+                    $('#weightInput').focus();
+                }
+            });
+
+            // Add to recipe
+            $('#addBtn').on('click', function () {
+                if (!selectedData) return;
+
+                const weight = parseFloat($('#weightInput').val());
+                if (isNaN(weight) || weight <= 0) {
+                    alert('正しい重量を入力してください');
+                    return;
+                }
+
+                // Calculate values
+                const factor = weight / 100.0;
+                const item = {
+                    name: selectedData.name,
+                    weight: weight + 'g',
+                    energy: (selectedData.energy * factor).toFixed(2),
+                    protein: (selectedData.protein * factor).toFixed(2),
+                    fat: (selectedData.fat * factor).toFixed(2),
+                    carbs: (selectedData.carbs * factor).toFixed(2)
+                };
+
+                addRecipeRow(item);
+                updateTotals();
+                saveRecipe();
+
+                const currentTotals = getCurrentTotals();
+                sendActionLog('nutrition_add_item', {
+                    added_item: item,
+                    current_totals: currentTotals
+                });
+            });
+
+            // Remove row
+            $(document).on('click', '.btn-remove', function () {
+                const row = $(this).closest('tr');
+                const removedItemName = row.find('td:eq(0)').text();
+
+                row.remove();
+                updateTotals();
+                saveRecipe();
+
+                const currentTotals = getCurrentTotals();
+                sendActionLog('nutrition_remove_item', {
+                    removed_item_name: removedItemName,
+                    current_totals: currentTotals
+                });
+            });
+
+            // Decide/Finalize Button
+            $('#decideBtn').on('click', function () {
+                const items = [];
+                $('#recipeBody tr').each(function () {
+                    items.push({
+                        name: $(this).find('td:eq(0)').text(),
+                        weight: $(this).find('.val-weight').text(),
+                        energy: $(this).find('.val-energy').text(),
+                        protein: $(this).find('.val-protein').text(),
+                        fat: $(this).find('.val-fat').text(),
+                        carbs: $(this).find('.val-carbs').text()
+                    });
+                });
+
+                const totals = getCurrentTotals();
+
+                if (items.length === 0) {
+                    alert('レシピに食品が追加されていません．');
+                    return;
+                }
+
+                if (confirm('現在の内容でレシピを決定しますか？\n（決定ログを送信します）')) {
+                    sendActionLog('nutrition_complete', {
+                        final_items: items,
+                        final_totals: totals
+                    }).then(() => {
+                        alert('レシピを決定しました．');
+                    });
+                }
+            });
+
+            // Log sending function
+            async function sendActionLog(action, details = {}) {
+                try {
+                    await fetch('/api/log_action', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            action: action,
+                            details: details,
+                            url: window.location.href,
+                            timestamp: new Date().toISOString()
+                        })
+                    });
+                } catch (error) {
+                    console.error('Logging failed:', error);
+                }
+            }
+
+            function addRecipeRow(item) {
+                const row = `
+                    <tr>
+                        <td>${item.name}</td>
+                        <td class="val-weight">${item.weight}</td>
+                        <td class="val-energy">${item.energy}</td>
+                        <td class="val-protein">${item.protein}</td>
+                        <td class="val-fat">${item.fat}</td>
+                        <td class="val-carbs">${item.carbs}</td>
+                        <td><button class="btn btn-remove">削除</button></td>
+                    </tr>
+                `;
+                $('#recipeBody').append(row);
+            }
+
+            function updateTotals() {
+                let totalEnergy = 0, totalProtein = 0, totalFat = 0, totalCarbs = 0;
+                // Note: Total Weight mixing 'g' and 'cups' is tricky. 
+                // We'll show specific weight sum only for 'g' items or just show '-' to avoid confusion,
+                // OR parsing 'g' out. 
+                // User requested only "1 cup", "2 cups" change, not total weight of rice+soup calculation.
+                // For simplicity, let's sum up nutrition only, or try to sum 'g' if possible.
+
+                let totalGrams = 0;
+
+                $('#recipeBody tr').each(function () {
+                    const wStr = $(this).find('.val-weight').text();
+                    if (wStr.endsWith('g')) {
+                        totalGrams += parseFloat(wStr) || 0;
+                    }
+
+                    totalEnergy += parseFloat($(this).find('.val-energy').text()) || 0;
+                    totalProtein += parseFloat($(this).find('.val-protein').text()) || 0;
+                    totalFat += parseFloat($(this).find('.val-fat').text()) || 0;
+                    totalCarbs += parseFloat($(this).find('.val-carbs').text()) || 0;
+                });
+
+                $('#totalWeight').text(totalGrams > 0 ? totalGrams.toFixed(1) + 'g (+他)' : '-');
+                $('#totalEnergy').text(totalEnergy.toFixed(2));
+                $('#totalProtein').text(totalProtein.toFixed(2));
+                $('#totalFat').text(totalFat.toFixed(2));
+                $('#totalCarbs').text(totalCarbs.toFixed(2));
+            }
+
+            function getCurrentTotals() {
+                return {
+                    weight: $('#totalWeight').text(),
+                    energy: $('#totalEnergy').text(),
+                    protein: $('#totalProtein').text(),
+                    fat: $('#totalFat').text(),
+                    carbs: $('#totalCarbs').text()
+                };
+            }
+
+            // Persistence
+            function saveRecipe() {
+                const items = [];
+                $('#recipeBody tr').each(function () {
+                    items.push({
+                        name: $(this).find('td:eq(0)').text(),
+                        weight: $(this).find('.val-weight').text(),
+                        energy: $(this).find('.val-energy').text(),
+                        protein: $(this).find('.val-protein').text(),
+                        fat: $(this).find('.val-fat').text(),
+                        carbs: $(this).find('.val-carbs').text()
+                    });
+                });
+                localStorage.setItem('nutrition_tool_recipe', JSON.stringify(items));
+            }
+
+            function loadRecipe() {
+                const data = localStorage.getItem('nutrition_tool_recipe');
+                if (data) {
+                    try {
+                        const items = JSON.parse(data);
+                        items.forEach(item => addRecipeRow(item));
+                        updateTotals();
+                    } catch (e) {
+                        console.error('Failed to load recipe', e);
+                    }
+                }
+            }
+
+            loadRecipe();
+        });
+    </script>
+    <!-- User ID Display -->
+    <div id="user-id-display"
+        style="position: fixed; top: 20%; right: 20px; background-color: rgba(255, 255, 255, 0.9); border: 1px solid #ccc; padding: 10px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 9999; font-family: monospace; font-size: 0.9em;">
+        <div style="font-weight: bold; margin-bottom: 5px; font-size: 0.8em; color: #555;">User ID</div>
+        <div id="user-id-text" style="display:inline-block; margin-right: 5px; font-weight: bold;">{{ user_id }}</div>
+        <button onclick="copyUserId()" style="font-size: 0.8em; cursor: pointer; padding: 2px 6px;">Copy</button>
+    </div>
+    <script>
+        function copyUserId() {
+            const userId = document.getElementById('user-id-text').innerText.trim();
+            const btn = document.querySelector('#user-id-display button');
+            const originalText = btn.innerText;
+
+            const successCallback = () => {
+                btn.innerText = 'Copied!';
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                }, 2000);
+            };
+
+            const failCallback = (err) => {
+                console.error('Copy failed:', err);
+                prompt("Copy this ID:", userId);
+            };
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(userId).then(successCallback).catch(() => {
+                    fallbackCopy(userId, successCallback, failCallback);
+                });
+            } else {
+                fallbackCopy(userId, successCallback, failCallback);
+            }
+        }
+
+        function fallbackCopy(text, onSuccess, onFail) {
+            try {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-9999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                if (successful) {
+                    onSuccess();
+                } else {
+                    onFail(new Error("execCommand returned false"));
+                }
+            } catch (err) {
+                onFail(err);
+            }
+        }
+    </script>
+</body>
+
+</html>
