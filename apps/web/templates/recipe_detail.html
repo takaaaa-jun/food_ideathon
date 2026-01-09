@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>{{ recipe.title }} - 詳細</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 800px;
+            margin: 2em auto;
+            padding: 0 1em;
+            background-color: #f9f9f9;
+        }
+
+        .result-item {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 1.5em;
+            margin-bottom: 1.5em;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .recipe-details {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2em;
+            margin-top: 1em;
+        }
+
+        h1,
+        h2 {
+            color: #333;
+        }
+
+        h2 {
+            color: #d63384;
+        }
+
+        h3 {
+            border-bottom: 2px solid #eee;
+            padding-bottom: 0.3em;
+            color: #555;
+        }
+
+        ul,
+        ol {
+            padding-left: 20px;
+            margin-top: 0.5em;
+        }
+
+        li {
+            margin-bottom: 0.7em;
+            line-height: 1.6;
+        }
+
+        .recipe-meta {
+            margin-top: 0.5em;
+            margin-bottom: 1em;
+            color: #555;
+            font-size: 0.9em;
+        }
+
+        .recipe-meta span {
+            margin-right: 1.5em;
+        }
+
+        .time-icon::before {
+            content: '時間';
+            margin-right: 0.5em;
+        }
+
+        .serving-icon::before {
+            content: '人数';
+            margin-right: 0.5em;
+        }
+
+        .nutrition-totals {
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            padding: 1em;
+            margin: 1.5em 0;
+        }
+
+        .nutrition-totals h3 {
+            margin-top: 0;
+            color: #007BFF;
+        }
+
+        .nutrition-totals ul {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .nutrition-totals .label {
+            font-weight: bold;
+        }
+
+        .nutrition-totals .value {
+            color: #d63384;
+            font-weight: bold;
+            margin-left: 0.5em;
+        }
+
+        .ingredient-item {
+            border-bottom: 1px dashed #eee;
+            padding-bottom: 8px;
+        }
+
+        .ingredient-nutrition {
+            font-size: 0.85em;
+            color: #666;
+            padding-left: 15px;
+        }
+
+        .small-note {
+            font-size: 0.8em;
+            color: #888;
+        }
+
+        a {
+            text-decoration: none;
+            color: #007BFF;
+        }
+    </style>
+</head>
+
+<body>
+    <p><a href="javascript:history.back()">← 検索結果に戻る</a></p>
+
+    <div class="result-item">
+        <h2>{{ recipe.title }}</h2>
+
+        <div class="recipe-meta">
+            {% if recipe.cooking_time %}
+            <span class="time-icon">{{ recipe.cooking_time }}</span>
+            {% endif %}
+            {% if recipe.serving_for %}
+            <span class="serving-icon">{{ recipe.serving_for }}</span>
+            {% endif %}
+            <span>公開日: {{ recipe.published_at }}</span>
+        </div>
+
+        <p>{{ recipe.description }}</p>
+
+        <div class="nutrition-totals">
+            <h3>レシピ全体の栄養素 (推定値)</h3>
+            <ul>
+                <li><span class="label">エネルギー:</span> <span class="value">{{
+                        "%.1f"|format(recipe.nutrition_totals.energy) }} kcal</span></li>
+                <li><span class="label">たんぱく質:</span> <span class="value">{{
+                        "%.1f"|format(recipe.nutrition_totals.protein) }} g</span></li>
+                <li><span class="label">脂質:</span> <span class="value">{{ "%.1f"|format(recipe.nutrition_totals.fat) }}
+                        g</span></li>
+                <li><span class="label">炭水化物:</span> <span class="value">{{ "%.1f"|format(recipe.nutrition_totals.carbs)
+                        }} g</span></li>
+            </ul>
+        </div>
+
+        {% if recipe.nutrition_per_serving and recipe.nutrition_ratios %}
+        <div class="nutrition-totals">
+            <h3>1人分の栄養素 ({{ recipe.serving_size }}人分として計算)</h3>
+            <ul>
+                <li><span class="label">エネルギー:</span> <span class="value">{{
+                        "%.1f"|format(recipe.nutrition_per_serving.energy) }} / {{ recipe.standards.energy }} [{{
+                        "%.0f"|format(recipe.nutrition_ratios.energy) }}%]</span></li>
+                <li><span class="label">たんぱく質:</span> <span class="value">{{
+                        "%.1f"|format(recipe.nutrition_per_serving.protein) }} / {{ recipe.standards.protein }} [{{
+                        "%.0f"|format(recipe.nutrition_ratios.protein) }}%]</span></li>
+                <li><span class="label">脂質:</span> <span class="value">{{
+                        "%.1f"|format(recipe.nutrition_per_serving.fat) }} / {{ recipe.standards.fat }} [{{
+                        "%.0f"|format(recipe.nutrition_ratios.fat) }}%]</span></li>
+                <li><span class="label">炭水化物:</span> <span class="value">{{
+                        "%.1f"|format(recipe.nutrition_per_serving.carbs) }} / {{ recipe.standards.carbs }} [{{
+                        "%.0f"|format(recipe.nutrition_ratios.carbs) }}%]</span></li>
+            </ul>
+        </div>
+        {% endif %}
+
+        <div class="recipe-details">
+            <div>
+                <h3>材料</h3>
+                <ul>
+                    {% for ingredient in recipe.ingredients %}
+                    <li class="ingredient-item">
+                        <strong>{{ ingredient.name }}</strong>: {{ ingredient.quantity }}
+                        <div class="ingredient-nutrition">
+                            {% if ingredient.nutrition.normalized_quantity_g > 0 %}
+                            <span>[ {{ "%.1f"|format(ingredient.nutrition.energy) }} kcal ]</span>
+                            {% endif %}
+                        </div>
+                    </li>
+                    {% else %}
+                    <li>材料情報が登録されていません。</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <div>
+                <h3>作り方</h3>
+                <ol>
+                    {% for step in recipe.steps %}
+                    <li>{{ step.memo }}</li>
+                    {% else %}
+                    <li>手順情報が登録されていません。</li>
+                    {% endfor %}
+                </ol>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

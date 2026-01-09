@@ -2,7 +2,7 @@ import os
 import mysql.connector
 
 # Load config
-config_path = os.path.join(os.path.dirname(__file__), 'db_connection.cofg')
+config_path = os.path.join(os.path.dirname(__file__), '../db_connection.cofg')
 config_vars = {}
 with open(config_path, 'r', encoding='utf-8') as f:
     exec(f.read(), {}, config_vars)
@@ -12,14 +12,19 @@ DB_CONFIG = config_vars['DB_CONFIG']
 try:
     conn = mysql.connector.connect(**DB_CONFIG)
     cursor = conn.cursor()
-    # Check standard_recipe_ingredients
-    cursor.execute("DESCRIBE standard_recipe_ingredients")
-    print("\nColumns in standard_recipe_ingredients:")
-    for col in cursor.fetchall():
-        print(col)
+    # Check ingredients
+    print("--- ingredients columns ---")
+    cursor.execute("DESCRIBE ingredients")
+    for row in cursor.fetchall():
+        print(row)
 
-    cursor.execute("SELECT ingredient_name FROM standard_recipe_ingredients LIMIT 10")
-    print("\nSample ingredient_names in standard_recipe_ingredients:")
+    print("\n--- ingredients indexes ---")
+    cursor.execute("SHOW INDEX FROM ingredients")
+    for row in cursor.fetchall():
+        print(row)
+
+    cursor.execute("SELECT ingredient_name FROM ingredients LIMIT 10")
+    print("\nSample ingredient_names in ingredients:")
     for row in cursor.fetchall():
         print(row)
 

@@ -19,6 +19,7 @@ ENV/
 coverage.xml
 *.log
 *.csv
+*.cofg
 
 # エディタ / OS
 .vscode/*
@@ -29,3 +30,5 @@ coverage.xml
 # node / build 等（必要なら残す）
 node_modules/
 dist/
+# Backup directory
+_backup/

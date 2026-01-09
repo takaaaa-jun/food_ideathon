@@ -1,0 +1,109 @@
+<div class="result-item" style="border: none; box-shadow: none; margin: 0; padding: 1em;">
+    <div class="recipe-meta">
+        {% if recipe.cooking_time %}
+        <span class="time-icon">{{ recipe.cooking_time }}</span>
+        {% endif %}
+        {% if recipe.serving_for %}
+        <span class="serving-icon">{{ recipe.serving_for }}</span>
+        {% endif %}
+    </div>
+
+    <p>{{ recipe.description }}</p>
+
+    <div class="nutrition-totals">
+        <h3>レシピ全体の栄養素 (推定値)</h3>
+        <ul>
+            <li><span class="label">エネルギー:</span> <span class="value">{{
+                    "%.1f"|format(recipe.nutrition_totals.energy) }} kcal</span></li>
+            <li><span class="label">たんぱく質:</span> <span class="value">{{
+                    "%.1f"|format(recipe.nutrition_totals.protein) }} g</span></li>
+            <li><span class="label">脂質:</span> <span class="value">{{
+                    "%.1f"|format(recipe.nutrition_totals.fat) }}
+                    g</span></li>
+            <li><span class="label">炭水化物:</span> <span class="value">{{
+                    "%.1f"|format(recipe.nutrition_totals.carbs)
+                    }} g</span></li>
+        </ul>
+        <p class="small-note">※ グラム(g)が特定できた材料のみの合計値です．</p>
+    </div>
+
+    {% if recipe.nutrition_per_serving and recipe.nutrition_ratios %}
+    <div class="nutrition-totals">
+        <h3>1人分の栄養素 ({{ recipe.serving_size }}人分として計算)</h3>
+        <ul>
+            <li>
+                <span class="label">エネルギー:</span>
+                <span class="value">
+                    {{ "%.1f"|format(recipe.nutrition_per_serving.energy) }} / {{
+                    recipe.standards.energy }}
+                    [{{ "%.0f"|format(recipe.nutrition_ratios.energy) }}%]
+                </span>
+            </li>
+            <li>
+                <span class="label">たんぱく質:</span>
+                <span class="value">
+                    {{ "%.1f"|format(recipe.nutrition_per_serving.protein) }} / {{
+                    recipe.standards.protein }}
+                    [{{ "%.0f"|format(recipe.nutrition_ratios.protein) }}%]
+                </span>
+            </li>
+            <li>
+                <span class="label">脂質:</span>
+                <span class="value">
+                    {{ "%.1f"|format(recipe.nutrition_per_serving.fat) }} / {{ recipe.standards.fat
+                    }}
+                    [{{ "%.0f"|format(recipe.nutrition_ratios.fat) }}%]
+                </span>
+            </li>
+            <li>
+                <span class="label">炭水化物:</span>
+                <span class="value">
+                    {{ "%.1f"|format(recipe.nutrition_per_serving.carbs) }} / {{
+                    recipe.standards.carbs }}
+                    [{{ "%.0f"|format(recipe.nutrition_ratios.carbs) }}%]
+                </span>
+            </li>
+        </ul>
+    </div>
+    {% endif %}
+
+    <div class="recipe-details">
+        <div>
+            <h3>材料</h3>
+            <ul>
+                {% for ingredient in recipe.ingredients %}
+                <li class="ingredient-item">
+                    <strong>{{ ingredient.name }}</strong>: {{ ingredient.quantity }}
+                    <div class="ingredient-nutrition">
+                        {% if ingredient.nutrition.normalized_quantity_g > 0 %}
+                        <span>
+                            [ {{ "%.1f"|format(ingredient.nutrition.energy) }} kcal |
+                            P: {{ "%.1f"|format(ingredient.nutrition.protein) }}g |
+                            F: {{ "%.1f"|format(ingredient.nutrition.fat) }}g |
+                            C: {{ "%.1f"|format(ingredient.nutrition.carbs) }}g ]
+                        </span>
+                        <span class="small-note">({{
+                            "%.0f"|format(ingredient.nutrition.normalized_quantity_g) }}g
+                            として計算)</span>
+                        {% else %}
+                        <span class="small-note">[量不明のため計算不可]</span>
+                        {% endif %}
+                    </div>
+                </li>
+                {% else %}
+                <li>材料情報が登録されていません。</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div>
+            <h3>作り方</h3>
+            <ol>
+                {% for step in recipe.steps %}
+                <li>{{ step.memo }}</li>
+                {% else %}
+                <li>手順情報が登録されていません。</li>
+                {% endfor %}
+            </ol>
+        </div>
+    </div>
+</div>

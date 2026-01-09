@@ -4,7 +4,8 @@ import sys
 import mysql.connector
 
 # DB Config
-config_path = os.path.join('/srv/foodapp/apps/web', 'db_connection.cofg')
+# DB Config
+config_path = os.path.join(os.path.dirname(__file__), '../db_connection.cofg')
 config_vars = {}
 with open(config_path, 'r', encoding='utf-8') as f:
     exec(f.read(), {}, config_vars)

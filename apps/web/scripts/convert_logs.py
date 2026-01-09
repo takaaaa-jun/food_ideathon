@@ -4,9 +4,9 @@ import json
 import csv
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-LOG_FILE = os.path.join(BASE_DIR, 'logs', 'app.log')
-ACCESS_CSV = os.path.join(BASE_DIR, 'logs', 'access_log.csv')
-ACTION_CSV = os.path.join(BASE_DIR, 'logs', 'action_log.csv')
+LOG_FILE = os.path.join(BASE_DIR, '../logs', 'app.log')
+ACCESS_CSV = os.path.join(BASE_DIR, '../logs', 'access_log.csv')
+ACTION_CSV = os.path.join(BASE_DIR, '../logs', 'action_log.csv')
 
 def parse_log_line(line):
     # Log format: YYYY-MM-DD HH:MM:SS,mmm - LEVEL - TYPE: {json}

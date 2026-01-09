@@ -3,15 +3,18 @@ import os
 import json
 import shutil
 import uuid
-from app import app
+import sys
+import os
+
+# Add project root to sys.path to allow imports from apps
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
+
+from apps.web.app import app
 
 class LogTestCase(unittest.TestCase):
     def setUp(self):
         self.app = app.test_client()
-        self.log_dir = os.path.join(os.path.dirname(__file__), 'logs')
-    def setUp(self):
-        self.app = app.test_client()
-        self.log_dir = os.path.join(os.path.dirname(__file__), 'logs')
+        self.log_dir = os.path.join(os.path.dirname(__file__), '../logs')
         self.log_file = os.path.join(self.log_dir, 'app.log')
         # ログファイルが存在しない場合は作成
         if not os.path.exists(self.log_file):
