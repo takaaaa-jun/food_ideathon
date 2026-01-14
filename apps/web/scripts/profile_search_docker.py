@@ -3,7 +3,10 @@ import os
 import time
 import mysql.connector
 
-# No sys.path append needed as /app is PYTHONPATH in Docker
+# No sys.path append needed as /app is PYTHONPATH in Docker if run from root, but we are in scripts now.
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.database import get_db_connection
 from services.search import search_recipes

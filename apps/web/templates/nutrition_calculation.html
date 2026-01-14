@@ -5,108 +5,299 @@
     <meta charset="UTF-8">
     <title>栄養計算</title>
     <style>
+        :root {
+            --primary-color: #d63384;
+            /* Pink */
+            --secondary-color: #6c757d;
+            --accent-color: #007bff;
+            /* Blue */
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --border-radius: 12px;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        html {
+            overflow-y: scroll;
+        }
+
+
+
         body {
-            font-family: sans-serif;
-            max-width: 1000px;
-            margin: 2em auto;
-            padding: 0 1em;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            font-size: 18px;
+            background-color: var(--bg-color);
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
         }
 
         h1,
-        h2 {
-            color: #333;
+        h2,
+        h3 {
+            color: #2c3e50;
+            margin-top: 0;
         }
 
-        .container {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 700;
         }
 
-        .data-section {
-            flex: 1;
-            min-width: 500px;
-        }
-
-        .calc-section {
-            flex: 1;
-            min-width: 400px;
-            background: #f9f9f9;
-            padding: 20px;
-            border-radius: 8px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
+        .header-nav {
             margin-bottom: 20px;
         }
 
-        th,
-        td {
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        /* --- Staple Foods (Quick Add) --- */
+        .staple-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .staple-card {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+            background: #fff;
+        }
+
+        .staple-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+            border-color: #bce8f1;
+        }
+
+        .staple-name {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #444;
+            font-size: 0.95em;
+        }
+
+        .staple-meta {
+            font-size: 0.75em;
+            color: #888;
+            margin-bottom: 8px;
+        }
+
+        .staple-actions {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .staple-input {
+            width: 40px;
+            padding: 4px;
             border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
+            border-radius: 4px;
+            text-align: center;
         }
 
-        th {
-            background-color: #f2f2f2;
+        /* --- Main Table Section --- */
+        .selection-panel {
+            background-color: #e3f2fd;
+            border: 1px solid #90caf9;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
-        .selected-row {
-            background-color: #e0f7fa !important;
+        .selection-info strong {
+            color: var(--accent-color);
+            font-size: 1.1em;
         }
 
-        .input-group {
-            margin-bottom: 1em;
+        .selection-controls {
             display: flex;
             gap: 10px;
             align-items: center;
         }
 
-        .input-group label {
+        /* --- Recipe Section --- */
+        .totals-dashboard {
+            background: #2c3e50;
+            color: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 15px;
+            text-align: center;
+        }
+
+        .total-item .label {
+            font-size: 0.8em;
+            opacity: 0.8;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .total-item .value {
+            font-size: 1.4em;
             font-weight: bold;
+            color: #ffc107;
+            /* Warning yellow for visibility */
         }
 
-        .input-group input {
-            padding: 5px;
-            width: 100px;
+        .total-item .unit {
+            font-size: 0.6em;
+            opacity: 0.8;
         }
 
+        /* --- Tables --- */
+        table.dataTable {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100% !important;
+            table-layout: fixed;
+            /* Stop layout jitter */
+        }
+
+        #ingredientsTable th:nth-child(1) {
+            width: 40%;
+        }
+
+        #ingredientsTable th:nth-child(2) {
+            width: 15%;
+        }
+
+        #ingredientsTable th:nth-child(3) {
+            width: 15%;
+        }
+
+        #ingredientsTable th:nth-child(4) {
+            width: 15%;
+        }
+
+        #ingredientsTable th:nth-child(5) {
+            width: 15%;
+        }
+
+        table.dataTable thead th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            color: #495057;
+        }
+
+        table.dataTable tbody tr.selected-row {
+            background-color: #fff3cd !important;
+            /* Yellow-ish highlight */
+        }
+
+        #recipeTable {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #recipeTable th,
+        #recipeTable td {
+            padding: 12px 8px;
+            border-bottom: 1px solid #eee;
+            text-align: right;
+        }
+
+        #recipeTable th:first-child,
+        #recipeTable td:first-child {
+            text-align: left;
+        }
+
+        /* --- Buttons --- */
         .btn {
             padding: 8px 16px;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
             color: white;
         }
 
-        .btn-add {
-            background-color: #28a745;
+        .btn-primary:hover {
+            background-color: #0056b3;
         }
 
-        .btn-add:hover {
+        .btn-primary:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
             background-color: #218838;
         }
 
-        .btn-remove {
+        .btn-danger {
             background-color: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+
+        .btn-decide {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1em;
+            background: linear-gradient(135deg, #d63384 0%, #c2185b 100%);
+            box-shadow: 0 4px 15px rgba(214, 51, 132, 0.3);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .btn-decide:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(214, 51, 132, 0.4);
+        }
+
+        .btn-sm {
             padding: 4px 8px;
-            font-size: 0.8em;
-        }
-
-        .total-row {
-            font-weight: bold;
-            background-color: #e9ecef;
-        }
-
-        /* Datatables adjustments */
-        .dataTables_wrapper .dataTables_filter {
-            margin-bottom: 15px;
-        }
-
-        table.dataTable tbody tr {
-            cursor: pointer;
+            font-size: 0.85em;
         }
     </style>
     <!-- jQuery -->
@@ -118,118 +309,170 @@
 
 <body>
 
+    <div class="header-nav">
+        <a href="{{ url_for('personal.index') }}" style="text-decoration: none; color: #666;">← トップに戻る</a>
+    </div>
+
     <h1>栄養計算ツール</h1>
-    <p><a href="{{ url_for('index') }}">← トップに戻る</a></p>
 
     {% if error %}
-    <p style="color: red;">{{ error }}</p>
+    <div
+        style="background: #f8d7da; color: #721c24; padding: 10px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+        {{ error }}
+    </div>
     {% endif %}
 
     <div class="container">
-        <!-- List Section -->
-        <div class="data-section">
-            <h2>食品リスト (100gあたり)</h2>
-            <p>行をクリックして選択し，重量を入力して追加してください．</p>
 
-            <!-- Staple Foods Section -->
-            <div id="stapleFoodsArea"
-                style="margin-bottom: 20px; padding: 15px; border: 1px solid #bce8f1; border-radius: 4px; background-color: #d9edf7;">
-                <h3>よく使う主食 (杯数指定)</h3>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <!-- LEFT COLUMN: Sources -->
+        <div class="source-column">
+
+            <!-- STAPLE FOODS CARD -->
+            <div class="card">
+                <h3>🍚 よく使う主食 (クイック追加)</h3>
+                <div class="staple-grid">
                     {% for staple in staple_foods %}
-                    <div class="staple-item"
-                        style="background: white; padding: 10px; border-radius: 4px; border: 1px solid #ccc;">
-                        <div style="font-weight: bold; margin-bottom: 5px;">{{ staple.name }}</div>
-                        <div style="font-size: 0.8em; color: #666; margin-bottom: 5px;">
-                            E:{{ "%.2f"|format(staple.energy) }} P:{{ "%.2f"|format(staple.protein) }} F:{{
-                            "%.2f"|format(staple.fat) }} C:{{ "%.2f"|format(staple.carbs) }}
+                    <div class="staple-item staple-card">
+                        <div class="staple-name">{{ staple.name }}</div>
+                        <div class="staple-meta">
+                            {{ "%.0f"|format(staple.energy) }}kcal
                         </div>
-                        <div style="display: flex; align-items: center; gap: 5px;">
+                        <div class="staple-actions">
                             <input type="number" id="qty_{{ staple.id }}" value="1" min="1" step="1"
-                                style="width: 50px;">
-                            <span>{{ staple.unit }}</span>
-                            <button class="btn btn-add btn-sm btn-staple-add" data-id="{{ staple.id }}"
+                                class="staple-input">
+                            <span style="font-size: 0.8em;">{{ staple.unit }}</span>
+                            <button class="btn btn-success btn-sm btn-staple-add" data-id="{{ staple.id }}"
                                 data-name="{{ staple.name }}" data-energy="{{ staple.energy }}"
                                 data-protein="{{ staple.protein }}" data-fat="{{ staple.fat }}"
-                                data-carbs="{{ staple.carbs }}" data-unit="{{ staple.unit }}">追加</button>
+                                data-carbs="{{ staple.carbs }}" data-fiber="{{ staple.fiber }}"
+                                data-salt="{{ staple.salt }}" data-unit="{{ staple.unit }}">+</button>
                         </div>
                     </div>
                     {% endfor %}
                 </div>
             </div>
 
-            <table id="ingredientsTable" class="display">
-                <thead>
-                    <tr>
-                        <th>食品名</th>
-                        <th>エネル<br>ギー<br>(kcal)</th>
-                        <th>たんぱく<br>質<br>(g)</th>
-                        <th>脂質<br>(g)</th>
-                        <th>炭水<br>化物<br>(g)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in ingredients %}
-                    <tr data-id="{{ item.id }}" data-name="{{ item.name }}" data-energy="{{ item.energy }}"
-                        data-protein="{{ item.protein }}" data-fat="{{ item.fat }}" data-carbs="{{ item.carbs }}">
-                        <td>{{ item.name }}</td>
-                        <td>{{ "%.2f"|format(item.energy) }}</td>
-                        <td>{{ "%.2f"|format(item.protein) }}</td>
-                        <td>{{ "%.2f"|format(item.fat) }}</td>
-                        <td>{{ "%.2f"|format(item.carbs) }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+            <!-- INGREDIENTS LIST CARD -->
+            <div class="card">
+                <h3>🥕 食品リストから選択 (100gあたり)</h3>
+                <p style="font-size: 0.9em; color: #666; margin-bottom: 15px;">行をクリックして下のフォームから追加してください。</p>
 
-        <!-- Calculation Section -->
-        <div class="calc-section">
-            <h2>現在のレシピ</h2>
-
-            <div id="selectionArea"
-                style="margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; background: white;">
-                <h3>選択中: <span id="selectedName">なし</span></h3>
-                <div class="input-group">
-                    <label for="weightInput">重量 (g):</label>
-                    <input type="number" id="weightInput" min="0" step="0.1" value="100">
-                    <button id="addBtn" class="btn btn-add" disabled>追加</button>
+                <!-- Selection Panel (Sticky bottom of card conceptually) -->
+                <div class="selection-panel" id="selectionArea" style="margin-bottom: 20px;">
+                    <div class="selection-info">
+                        選択中: <strong id="selectedName">なし</strong>
+                    </div>
+                    <div class="selection-controls">
+                        <label>
+                            <input type="number" id="weightInput" min="0" step="0.1" value="100"
+                                style="padding: 6px; width: 80px; border-radius: 4px; border: 1px solid #ccc;">
+                            g
+                        </label>
+                        <button id="addBtn" class="btn btn-primary" disabled>↓ レシピに追加</button>
+                    </div>
                 </div>
-            </div>
 
-            <table id="recipeTable">
-                <thead>
-                    <tr>
-                        <th>食品名</th>
-                        <th>量</th>
-                        <th>エネルギー</th>
-                        <th>たんぱく質</th>
-                        <th>脂質</th>
-                        <th>炭水化物</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody id="recipeBody">
-                    <!-- Added items will appear here -->
-                </tbody>
-                <tfoot>
-                    <tr class="total-row">
-                        <td>合計</td>
-                        <td id="totalWeight">-</td>
-                        <td id="totalEnergy">0</td>
-                        <td id="totalProtein">0</td>
-                        <td id="totalFat">0</td>
-                        <td id="totalCarbs">0</td>
-                        <td></td>
-                    </tr>
-                </tfoot>
-            </table>
+                <table id="ingredientsTable" class="display" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>食品名</th>
+                            <th>kCal</th>
+                            <th>P(g)</th>
+                            <th>F(g)</th>
+                            <th>C(g)</th>
+                            <th>Fib(g)</th>
+                            <th>Salt(g)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in ingredients %}
+                        <tr data-id="{{ item.id }}" data-name="{{ item.name }}" data-energy="{{ item.energy }}"
+                            data-protein="{{ item.protein }}" data-fat="{{ item.fat }}" data-carbs="{{ item.carbs }}"
+                            data-fiber="{{ item.fiber }}" data-salt="{{ item.salt }}">
+                            <td>{{ item.name }}</td>
+                            <td>{{ "%.1f"|format(item.energy) }}</td>
+                            <td>{{ "%.1f"|format(item.protein) }}</td>
+                            <td>{{ "%.1f"|format(item.fat) }}</td>
+                            <td>{{ "%.1f"|format(item.carbs) }}</td>
+                            <td>{{ "%.1f"|format(item.fiber) }}</td>
+                            <td>{{ "%.1f"|format(item.salt) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
 
-            <div style="text-align: center; margin-top: 20px;">
-                <button id="decideBtn" class="btn"
-                    style="background-color: #007bff; font-size: 1.2em; padding: 10px 30px;">レシピの栄養を決定する</button>
+
             </div>
         </div>
+
+        <!-- RIGHT COLUMN: Calculation -->
+        <div class="calc-column">
+            <div class="card" style="position: sticky; top: 20px;">
+                <h2>📝 現在のレシピ</h2>
+
+                <!-- Totals Dashboard -->
+                <div class="totals-dashboard">
+                    <div class="total-item">
+                        <span class="label">総重量</span>
+                        <span class="value" id="totalWeight" style="font-size: 1.0em; color: #fff;">-</span>
+                    </div>
+                    <div class="total-item">
+                        <span class="label">エネルギー</span>
+                        <span class="value" id="totalEnergy">0</span>
+                        <span class="unit">kcal</span>
+                    </div>
+                    <div class="total-item">
+                        <span class="label">たんぱく質</span>
+                        <span class="value" id="totalProtein">0</span>
+                        <span class="unit">g</span>
+                    </div>
+                    <div class="total-item">
+                        <span class="label">脂質</span>
+                        <span class="value" id="totalFat">0</span>
+                        <span class="unit">g</span>
+                    </div>
+                    <div class="total-item">
+                        <span class="label">炭水化物</span>
+                        <span class="value" id="totalCarbs">0</span>
+                        <span class="unit">g</span>
+                    </div>
+                    <div class="total-item">
+                        <span class="label">食物繊維</span>
+                        <span class="value" id="totalFiber">0</span>
+                        <span class="unit">g</span>
+                    </div>
+                    <div class="total-item">
+                        <span class="label">食塩相当量</span>
+                        <span class="value" id="totalSalt">0</span>
+                        <span class="unit">g</span>
+                    </div>
+                </div>
+
+                <div style="overflow-x: auto;">
+                    <table id="recipeTable">
+                        <thead>
+                            <tr>
+                                <th>食品名</th>
+                                <th>量</th>
+                                <th>kCal</th>
+                                <th>P</th>
+                                <th>F</th>
+                                <th>C</th>
+                                <th>Fib</th>
+                                <th>Salt</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="recipeBody">
+                            <!-- Added items will appear here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <button id="decideBtn" class="btn btn-decide">決定 (レシピ完了)</button>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -243,7 +486,7 @@
             });
 
             // Staple Adding Function
-            function addStaple(id, name, energy, protein, fat, carbs, unit) {
+            function addStaple(id, name, energy, protein, fat, carbs, fiber, salt, unit) {
                 const qtyInput = document.getElementById('qty_' + id);
                 const qty = parseFloat(qtyInput.value);
 
@@ -259,10 +502,11 @@
                     protein: (protein * qty).toFixed(2),
                     fat: (fat * qty).toFixed(2),
                     carbs: (carbs * qty).toFixed(2),
+                    fiber: (fiber * qty).toFixed(2),
+                    salt: (salt * qty).toFixed(2),
                     isStaple: true
                 };
 
-                // Trigger logic directly here since we are in jQuery scope now, or trigger event
                 addRecipeRow(item);
                 updateTotals();
                 saveRecipe();
@@ -280,17 +524,14 @@
                 addStaple(
                     btn.data('id'),
                     btn.data('name'),
-                    parseFloat(btn.data('energy')),
-                    parseFloat(btn.data('protein')),
-                    parseFloat(btn.data('fat')),
-                    parseFloat(btn.data('carbs')),
+                    parseFloat(btn.data('energy') || 0),
+                    parseFloat(btn.data('protein') || 0),
+                    parseFloat(btn.data('fat') || 0),
+                    parseFloat(btn.data('carbs') || 0),
+                    parseFloat(btn.data('fiber') || 0),
+                    parseFloat(btn.data('salt') || 0),
                     btn.data('unit')
                 );
-            });
-
-            // Listen for staple add event (Keep for compatibility if code dispatches it, though we direct called above)
-            document.addEventListener('addStapleItem', function (e) {
-                // Redundant now if we call direct, but leaving just in case
             });
 
             var selectedData = null;
@@ -310,10 +551,12 @@
                     selectedData = {
                         id: $(this).data('id'),
                         name: $(this).data('name'),
-                        energy: parseFloat($(this).data('energy')),
-                        protein: parseFloat($(this).data('protein')),
-                        fat: parseFloat($(this).data('fat')),
-                        carbs: parseFloat($(this).data('carbs'))
+                        energy: parseFloat($(this).data('energy') || 0),
+                        protein: parseFloat($(this).data('protein') || 0),
+                        fat: parseFloat($(this).data('fat') || 0),
+                        carbs: parseFloat($(this).data('carbs') || 0),
+                        fiber: parseFloat($(this).data('fiber') || 0),
+                        salt: parseFloat($(this).data('salt') || 0)
                     };
 
                     $('#selectedName').text(selectedData.name);
@@ -340,7 +583,9 @@
                     energy: (selectedData.energy * factor).toFixed(2),
                     protein: (selectedData.protein * factor).toFixed(2),
                     fat: (selectedData.fat * factor).toFixed(2),
-                    carbs: (selectedData.carbs * factor).toFixed(2)
+                    carbs: (selectedData.carbs * factor).toFixed(2),
+                    fiber: (selectedData.fiber * factor).toFixed(2),
+                    salt: (selectedData.salt * factor).toFixed(2)
                 };
 
                 addRecipeRow(item);
@@ -380,7 +625,9 @@
                         energy: $(this).find('.val-energy').text(),
                         protein: $(this).find('.val-protein').text(),
                         fat: $(this).find('.val-fat').text(),
-                        carbs: $(this).find('.val-carbs').text()
+                        carbs: $(this).find('.val-carbs').text(),
+                        fiber: $(this).find('.val-fiber').text(),
+                        salt: $(this).find('.val-salt').text()
                     });
                 });
 
@@ -422,6 +669,10 @@
             }
 
             function addRecipeRow(item) {
+                // Compatibility for old saved data
+                const fiber = item.fiber || "0.00";
+                const salt = item.salt || "0.00";
+
                 const row = `
                     <tr>
                         <td>${item.name}</td>
@@ -430,20 +681,16 @@
                         <td class="val-protein">${item.protein}</td>
                         <td class="val-fat">${item.fat}</td>
                         <td class="val-carbs">${item.carbs}</td>
-                        <td><button class="btn btn-remove">削除</button></td>
+                        <td class="val-fiber">${fiber}</td>
+                        <td class="val-salt">${salt}</td>
+                        <td><button class="btn btn-danger btn-sm btn-remove">×</button></td>
                     </tr>
                 `;
                 $('#recipeBody').append(row);
             }
 
             function updateTotals() {
-                let totalEnergy = 0, totalProtein = 0, totalFat = 0, totalCarbs = 0;
-                // Note: Total Weight mixing 'g' and 'cups' is tricky. 
-                // We'll show specific weight sum only for 'g' items or just show '-' to avoid confusion,
-                // OR parsing 'g' out. 
-                // User requested only "1 cup", "2 cups" change, not total weight of rice+soup calculation.
-                // For simplicity, let's sum up nutrition only, or try to sum 'g' if possible.
-
+                let totalEnergy = 0, totalProtein = 0, totalFat = 0, totalCarbs = 0, totalFiber = 0, totalSalt = 0;
                 let totalGrams = 0;
 
                 $('#recipeBody tr').each(function () {
@@ -456,6 +703,8 @@
                     totalProtein += parseFloat($(this).find('.val-protein').text()) || 0;
                     totalFat += parseFloat($(this).find('.val-fat').text()) || 0;
                     totalCarbs += parseFloat($(this).find('.val-carbs').text()) || 0;
+                    totalFiber += parseFloat($(this).find('.val-fiber').text()) || 0;
+                    totalSalt += parseFloat($(this).find('.val-salt').text()) || 0;
                 });
 
                 $('#totalWeight').text(totalGrams > 0 ? totalGrams.toFixed(1) + 'g (+他)' : '-');
@@ -463,6 +712,8 @@
                 $('#totalProtein').text(totalProtein.toFixed(2));
                 $('#totalFat').text(totalFat.toFixed(2));
                 $('#totalCarbs').text(totalCarbs.toFixed(2));
+                $('#totalFiber').text(totalFiber.toFixed(2));
+                $('#totalSalt').text(totalSalt.toFixed(2));
             }
 
             function getCurrentTotals() {
@@ -471,7 +722,9 @@
                     energy: $('#totalEnergy').text(),
                     protein: $('#totalProtein').text(),
                     fat: $('#totalFat').text(),
-                    carbs: $('#totalCarbs').text()
+                    carbs: $('#totalCarbs').text(),
+                    fiber: $('#totalFiber').text(),
+                    salt: $('#totalSalt').text()
                 };
             }
 
@@ -485,7 +738,9 @@
                         energy: $(this).find('.val-energy').text(),
                         protein: $(this).find('.val-protein').text(),
                         fat: $(this).find('.val-fat').text(),
-                        carbs: $(this).find('.val-carbs').text()
+                        carbs: $(this).find('.val-carbs').text(),
+                        fiber: $(this).find('.val-fiber').text(),
+                        salt: $(this).find('.val-salt').text()
                     });
                 });
                 localStorage.setItem('nutrition_tool_recipe', JSON.stringify(items));
@@ -508,10 +763,12 @@
         });
     </script>
     <!-- User ID Display -->
+    <!-- User ID Display -->
     <div id="user-id-display"
-        style="position: fixed; top: 20%; right: 20px; background-color: rgba(255, 255, 255, 0.9); border: 1px solid #ccc; padding: 10px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 9999; font-family: monospace; font-size: 0.9em;">
-        <div style="font-weight: bold; margin-bottom: 5px; font-size: 0.8em; color: #555;">User ID</div>
-        <div id="user-id-text" style="display:inline-block; margin-right: 5px; font-weight: bold;">{{ user_id }}</div>
+        style="position: fixed; bottom: 10px; right: 10px; background-color: rgba(255, 255, 255, 0.9); border: 1px solid #ccc; padding: 5px 10px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 9999; font-family: monospace; font-size: 0.8em;">
+        <div style="font-weight: bold; margin-bottom: 2px; font-size: 0.8em; color: #555;">User ID</div>
+        <div id="user-id-text" style="display:inline-block; margin-right: 5px; font-weight: bold;">{{ user_id[:5] }}
+        </div>
         <button onclick="copyUserId()" style="font-size: 0.8em; cursor: pointer; padding: 2px 6px;">Copy</button>
     </div>
     <script>

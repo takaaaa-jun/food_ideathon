@@ -3,11 +3,7 @@ import unicodedata
 from core.database import get_synonyms, unify_keywords
 from core.utils import build_recipes_dict, process_recipe_rows, COOKING_TIME_MAP
 
-def search_recipes(cursor, search_query, start_id=1, limit=10):
-    """
-    一般レシピの検索処理 (Ingredient Search with Cursor Pagination)
-    Returns: list of dicts (id, title, description, published_at), total_hit_check (bool)
-    """
+def _parse_query(cursor, search_query):
     normalized_query = search_query.replace('　', ' ')
     keywords = normalized_query.split()
 
@@ -16,7 +12,7 @@ def search_recipes(cursor, search_query, start_id=1, limit=10):
 
     # 1. Ingredient Search Setup
     raw_inclusions = [k for k in keywords if not k.startswith('-')]
-    # exclusions = [k[1:] for k in keywords if k.startswith('-') and len(k) > 1] # Exclusions might be complex with cursor, ignore for now or apply in WHERE
+    # exclusions = [k[1:] for k in keywords if k.startswith('-') and len(k) > 1] 
 
     # Unify inclusions
     unified_inclusions = unify_keywords(cursor, raw_inclusions)
@@ -26,7 +22,17 @@ def search_recipes(cursor, search_query, start_id=1, limit=10):
     for inc in unified_inclusions:
         syns = get_synonyms(cursor, inc)
         inclusions.append(syns)
+    
+    return inclusions
 
+def search_recipes(cursor, search_query, start_id=1, limit=10):
+    """
+    一般レシピの検索処理 (Ingredient Search with Cursor Pagination)
+    Returns: list of dicts (id, title, description, published_at), total_hit_check (bool)
+    """
+    # Use helper
+    inclusions = _parse_query(cursor, search_query)
+    
     candidate_recipes = []
     
     if inclusions:
@@ -208,7 +214,7 @@ def get_recipe_details(cursor, recipe_id):
 
 def search_standard_recipes(cursor, search_query, search_mode='recipe'):
     """
-    基礎レシピの検索処理
+    基礎レシピの検索処理 (Optimized)
     """
     normalized_query = search_query.replace('　', ' ')
     keywords = normalized_query.split()
@@ -222,56 +228,81 @@ def search_standard_recipes(cursor, search_query, search_mode='recipe'):
     if not raw_inclusions and not exclusions:
         return []
 
-    recipe_ids = []
+    target_ids = []
 
     if search_mode == 'ingredient':
-        # --- Ingredient Search Code ---
-        candidate_ids_sets = []
+        # --- Optimized Ingredient Search ---
+        # Strategy: 
+        # 1. Get (id, count) for each keyword.
+        # 2. Intersect IDs (AND search).
+        # 3. Sum counts for score.
+        # 4. Sort and take top 5 IDs.
+        
+        from core.database import get_normalized_name
+        
+        # List of {recipe_id: count} dicts for each keyword
+        keyword_matches = []
+        
         if raw_inclusions:
             for keyword in raw_inclusions:
-                # Use get_normalized_name imported from database? No, need to pass cursor.
-                # Since get_normalized_name is in database.py, we imported it.
-                from core.database import get_normalized_name
-                
                 normalized_name = get_normalized_name(cursor, keyword)
                 if normalized_name:
-                    cursor.execute("SELECT DISTINCT standard_recipe_id FROM standard_recipe_ingredients WHERE ingredient_name = %s", (normalized_name,))
+                    cursor.execute("SELECT standard_recipe_id, count FROM standard_recipe_ingredients WHERE ingredient_name = %s", (normalized_name,))
                 else:
-                    cursor.execute("SELECT DISTINCT standard_recipe_id FROM standard_recipe_ingredients WHERE ingredient_name LIKE %s", (f"%{keyword}%",))
+                    cursor.execute("SELECT standard_recipe_id, count FROM standard_recipe_ingredients WHERE ingredient_name LIKE %s", (f"%{keyword}%",))
                 
-                ids = {row['standard_recipe_id'] for row in cursor.fetchall()}
-                candidate_ids_sets.append(ids)
+                # Store as map: {id: count}
+                matches = {row['standard_recipe_id']: row['count'] for row in cursor.fetchall()}
+                keyword_matches.append(matches)
             
-            if candidate_ids_sets:
-                common_ids = candidate_ids_sets[0]
-                for other_ids in candidate_ids_sets[1:]:
-                    common_ids &= other_ids
-                recipe_ids = list(common_ids)
-            else:
-                recipe_ids = []
-        else:
-             cursor.execute("SELECT id FROM standard_recipes")
-             recipe_ids = [row['id'] for row in cursor.fetchall()]
+            if not keyword_matches:
+                return []
+                
+            # Intersect IDs (AND logic)
+            common_ids = set(keyword_matches[0].keys())
+            for other_match in keyword_matches[1:]:
+                common_ids &= set(other_match.keys())
+            
+            if not common_ids:
+                return []
 
-        # Exclusions
-        if recipe_ids and exclusions:
-            from core.database import get_normalized_name
-            excluded_ids = set()
-            for keyword in exclusions:
-                normalized_name = get_normalized_name(cursor, keyword)
-                if normalized_name:
-                        cursor.execute("SELECT DISTINCT standard_recipe_id FROM standard_recipe_ingredients WHERE ingredient_name = %s", (normalized_name,))
-                else:
-                        cursor.execute("SELECT DISTINCT standard_recipe_id FROM standard_recipe_ingredients WHERE ingredient_name LIKE %s", (f"%{keyword}%",))
-                
-                for row in cursor.fetchall():
-                    excluded_ids.add(row['standard_recipe_id'])
+            # Calculate Score: Sum of counts for the matched keywords
+            # (Higher count means the ingredient is more prominent in that recipe)
+            scored_recipes = [] 
+            for r_id in common_ids:
+                score = 0
+                for match_map in keyword_matches:
+                    score += match_map.get(r_id, 0)
+                scored_recipes.append({'id': r_id, 'score': score})
             
-            recipe_ids = [rid for rid in recipe_ids if rid not in excluded_ids]
+            # Sort by Score DESC
+            scored_recipes.sort(key=lambda x: x['score'], reverse=True)
+            
+            # Exclusion Logic
+            if exclusions:
+                excluded_ids = set()
+                for keyword in exclusions:
+                    normalized_name = get_normalized_name(cursor, keyword)
+                    if normalized_name:
+                            cursor.execute("SELECT DISTINCT standard_recipe_id FROM standard_recipe_ingredients WHERE ingredient_name = %s", (normalized_name,))
+                    else:
+                            cursor.execute("SELECT DISTINCT standard_recipe_id FROM standard_recipe_ingredients WHERE ingredient_name LIKE %s", (f"%{keyword}%",))
+                    for row in cursor.fetchall():
+                        excluded_ids.add(row['standard_recipe_id'])
+                
+                scored_recipes = [r for r in scored_recipes if r['id'] not in excluded_ids]
+
+            # Slice Top 5
+            target_ids = [r['id'] for r in scored_recipes[:5]]
+            
+        else:
+            # No inclusions provided in ingredient mode? Just return empty or all?
+            # Original logic returned all IDs. But effectively we need inclusions for ingredient search.
+             return []
 
     else: 
-        # --- Recipe Name (Category Medium) Search ---
-        # Note: standard_recipes does not have FULLTEXT index, so we use LIKE.
+        # --- Optimized Recipe Name Search ---
+        # Use LIKE and ORDER BY recipe_count DESC LIMIT 5 directly in SQL
         
         conditions = []
         params = []
@@ -287,20 +318,137 @@ def search_standard_recipes(cursor, search_query, search_mode='recipe'):
                 params.append(f"%{keyword}%")
         
         if not conditions:
-            return [] # Should have been caught, but safety
+            return []
 
-        sql = f"SELECT id FROM standard_recipes WHERE {' AND '.join(conditions)}"
+        # Optimize: Sort by popularity (recipe_count) and LIMIT 5
+        sql = f"SELECT id FROM standard_recipes WHERE {' AND '.join(conditions)} ORDER BY recipe_count DESC LIMIT 5"
         cursor.execute(sql, params)
-        recipe_ids = [row['id'] for row in cursor.fetchall()]
+        target_ids = [row['id'] for row in cursor.fetchall()]
 
-    if not recipe_ids:
+    if not target_ids:
         return []
 
-    # Fetch details
-    placeholders = ', '.join(['%s'] * len(recipe_ids))
-    sql_std = f"""
-        SELECT * FROM standard_recipes WHERE id IN ({placeholders})
+    # --- Fetch Details ONLY for Target IDs ---
+    placeholders = ', '.join(['%s'] * len(target_ids))
+    
+    # 1. Basic Info
+    sql_std = f"SELECT * FROM standard_recipes WHERE id IN ({placeholders})"
+    cursor.execute(sql_std, target_ids)
+    recipes_rows = cursor.fetchall()
+    
+    recipes_data = {}
+    for row in recipes_rows:
+        recipes_data[row['id']] = {
+            'id': row['id'],
+            'name': row['category_medium'],
+            'recipe_count': row['recipe_count'],
+            'cooking_time': [row['cooking_time']],
+            'steps': {'average_steps': row['average_steps']},
+            'standard_steps': [],
+            'ingredient': {}
+        }
+        
+    # 2. Ingredients
+    sql_get_ingredients = f"SELECT * FROM standard_recipe_ingredients WHERE standard_recipe_id IN ({placeholders})"
+    cursor.execute(sql_get_ingredients, target_ids)
+    ingredients_rows = cursor.fetchall()
+
+    for row in ingredients_rows:
+        r_id = row['standard_recipe_id']
+        if r_id in recipes_data:
+            group = row['group_name'] or 'その他'
+            name = row['ingredient_name']
+            count = row['count']
+            
+            if group not in recipes_data[r_id]['ingredient']:
+                recipes_data[r_id]['ingredient'][group] = {'all': [0]}
+            
+            if name not in recipes_data[r_id]['ingredient'][group]:
+                 recipes_data[r_id]['ingredient'][group][name] = [0]
+
+            recipes_data[r_id]['ingredient'][group][name][0] = count
+            recipes_data[r_id]['ingredient'][group]['all'][0] += count
+
+    # 3. Steps
+    sql_get_steps = f"SELECT * FROM standard_recipe_steps WHERE standard_recipe_id IN ({placeholders}) ORDER BY count DESC"
+    cursor.execute(sql_get_steps, target_ids)
+    steps_rows = cursor.fetchall()
+
+    for row in steps_rows:
+        r_id = row['standard_recipe_id']
+        if r_id in recipes_data:
+            recipes_data[r_id]['standard_steps'].append({
+                'food_name': row['food_name'],
+                'action': row['action'],
+                'count': row['count']
+            })
+
+    # Preserve Order of target_ids
+    final_recipes_list = []
+    for tid in target_ids:
+        if tid in recipes_data:
+            final_recipes_list.append((recipes_data[tid]['name'], recipes_data[tid]))
+            
+    return final_recipes_list
+
+def get_standard_recipe_details(cursor, recipe_id):
     """
-    cursor.execute(sql_std, recipe_ids)
-    # Return raw dicts for now as expected by template
-    return cursor.fetchall()
+    基準レシピの詳細情報を取得する
+    """
+    # 1. Recipe Basic Info
+    cursor.execute("SELECT * FROM standard_recipes WHERE id = %s", (recipe_id,))
+    recipe = cursor.fetchone()
+    if not recipe:
+        return None
+        
+    # Standardize structure to match search_standard_recipes for template compatibility
+    recipe['steps'] = {'average_steps': recipe['average_steps']}
+    recipe['cooking_time'] = [recipe['cooking_time']] # Expect list in template
+    
+    # 2. Ingredients
+    cursor.execute("""
+        SELECT group_name, ingredient_name, count 
+        FROM standard_recipe_ingredients 
+        WHERE standard_recipe_id = %s
+        ORDER BY count DESC
+    """, (recipe_id,))
+    ingredients_rows = cursor.fetchall()
+    
+    # Structure ingredients by group (Same format as search_standard_recipes for template reuse)
+    # Structure: { 'CategoryName': {'all': [total], 'onion': [10], ...} }
+    ingredients_data = {}
+    for row in ingredients_rows:
+        grp = row['group_name'] or 'その他'
+        name = row['ingredient_name']
+        count = row['count']
+        
+        if grp not in ingredients_data:
+            ingredients_data[grp] = {'all': [0]}
+            
+        if name not in ingredients_data[grp]:
+            ingredients_data[grp][name] = [0]
+            
+        ingredients_data[grp][name][0] = count
+        ingredients_data[grp]['all'][0] += count
+        
+    recipe['ingredient'] = ingredients_data # Use 'ingredient' key to match search results template
+
+    # 3. Steps
+    cursor.execute("""
+        SELECT food_name, action, count
+        FROM standard_recipe_steps
+        WHERE standard_recipe_id = %s
+        ORDER BY count DESC
+    """, (recipe_id,))
+    
+    # Use 'standard_steps' key to match search results template
+    recipe['standard_steps'] = [] 
+    steps_rows = cursor.fetchall()
+    for row in steps_rows:
+        recipe['standard_steps'].append({
+            'food_name': row['food_name'],
+            'action': row['action'],
+            'count': row['count']
+        })
+    
+    return recipe

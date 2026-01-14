@@ -8,6 +8,7 @@
         /* CSS from results.html */
         body {
             font-family: sans-serif;
+            font-size: 18px;
             max-width: 800px;
             margin: 2em auto;
             padding: 0 1em;
@@ -270,12 +271,12 @@
     </h1>
     <p style="text-align: center;">
         <a href="/">← トップページに戻る</a> |
-        <a href="{{ url_for('standard_search_home') }}">基準レシピの検索に戻る</a>
+        <a href="{{ url_for('standard.standard_search_home') }}">基準レシピの検索に戻る</a>
     </p>
 
     <!-- Search Form (Hybrid) -->
     <div class="search-form">
-        <form id="searchForm" action="{{ url_for('standard_search') }}" method="post">
+        <form id="searchForm" action="{{ url_for('standard.standard_search') }}" method="post">
 
             <!-- Search Mode Selection (Preserved) -->
             <div class="search-mode-options">
@@ -319,7 +320,11 @@
 
     {% for recipe_name, details in basic_recipes %}
     <div class="result-item">
-        <h2>{{ recipe_name }}</h2>
+        <h2>
+            <a href="{{ url_for('standard.standard_recipe_detail', recipe_id=details.id) }}">{{ recipe_name }}</a>
+        </h2>
+
+
 
         <div class="recipe-meta">
             <p><strong>レシピ数:</strong> {{ details.recipe_count }}</p>
@@ -333,122 +338,7 @@
             <p><strong>平均手順数:</strong> {{ details.steps.average_steps }}</p>
         </div>
 
-        <div class="recipe-details-grid">
-            <div class="ingredients-col">
-                <h3>材料の内訳</h3>
-                {% set recipe_threshold = details.recipe_count * 0.2 %}
 
-                {# --- Ingredient Logic (Copied from original) --- #}
-                {% for category_name, ingredients in details.ingredient.items() %}
-                {% if ingredients.all[0] >= recipe_threshold %}
-                <div class="ingredient-category">
-                    {% set has_less_common = namespace(found=false) %}
-                    {% for ingredient_name, count_list in ingredients.items() %}
-                    {% if ingredient_name != 'all' and count_list[0] < ingredients.all[0] * 0.2 %} {% set
-                        has_less_common.found=true %} {% endif %} {% endfor %} <h4 class="toggle-button">
-                        {{ category_name }} (合計: {{ ingredients.all[0] }}件)
-                        {% if has_less_common.found %}
-                        <span class="arrow">▼</span>
-                        {% endif %}
-                        </h4>
-                        <ul>
-                            {% set threshold = ingredients.all[0] * 0.2 %}
-                            {% set visible_count = namespace(value=0) %}
-                            {% for ingredient_name, count_list in ingredients|dictsort(by='value', reverse=True) %}
-                            {% if ingredient_name != 'all' and count_list[0] >= threshold %}
-                            {% set visible_count.value = visible_count.value + 1 %}
-                            {% endif %}
-                            {% endfor %}
-
-                            {% set first_item_shown = namespace(value=false) %}
-                            {% for ingredient_name, count_list in ingredients|dictsort(by='value', reverse=True) %}
-                            {% if ingredient_name != 'all' %}
-                            {% if count_list[0] >= threshold %}
-                            <li>{{ ingredient_name }}: {{ count_list[0] }}件</li>
-                            {% set first_item_shown.value = true %}
-                            {% elif visible_count.value == 0 and not first_item_shown.value %}
-                            <li>{{ ingredient_name }}: {{ count_list[0] }}件</li>
-                            {% set first_item_shown.value = true %}
-                            {% else %}
-                            <li class="less-common" style="display: none;">{{ ingredient_name }}: {{ count_list[0] }}件
-                            </li>
-                            {% endif %}
-                            {% endif %}
-                            {% endfor %}
-                        </ul>
-                </div>
-                {% endif %}
-                {% endfor %}
-
-                <div class="other-categories-block">
-                    <h3 class="other-toggle-button">その他の分類 <span class="arrow">▼</span></h3>
-                    <div class="other-toggle-content" style="display: none;">
-                        {% for category_name, ingredients in details.ingredient.items() %}
-                        {% if ingredients.all[0] < recipe_threshold %} <div class="ingredient-category">
-                            {% set has_less_common = namespace(found=false) %}
-                            {% for ingredient_name, count_list in ingredients.items() %}
-                            {% if ingredient_name != 'all' and count_list[0] < ingredients.all[0] * 0.2 %} {% set
-                                has_less_common.found=true %} {% endif %} {% endfor %} <h4 class="toggle-button">
-                                {{ category_name }} (合計: {{ ingredients.all[0] }}件)
-                                {% if has_less_common.found %}
-                                <span class="arrow">▼</span>
-                                {% endif %}
-                                </h4>
-                                <ul>
-                                    {% set threshold = ingredients.all[0] * 0.2 %}
-                                    {% set visible_count = namespace(value=0) %}
-                                    {% for ingredient_name, count_list in ingredients|dictsort(by='value',
-                                    reverse=True) %}
-                                    {% if ingredient_name != 'all' and count_list[0] >= threshold %}
-                                    {% set visible_count.value = visible_count.value + 1 %}
-                                    {% endif %}
-                                    {% endfor %}
-
-                                    {% set first_item_shown = namespace(value=false) %}
-                                    {% for ingredient_name, count_list in ingredients|dictsort(by='value',
-                                    reverse=True) %}
-                                    {% if ingredient_name != 'all' %}
-                                    {% if count_list[0] >= threshold %}
-                                    <li>{{ ingredient_name }}: {{ count_list[0] }}件</li>
-                                    {% set first_item_shown.value = true %}
-                                    {% elif visible_count.value == 0 and not first_item_shown.value %}
-                                    <li>{{ ingredient_name }}: {{ count_list[0] }}件</li>
-                                    {% set first_item_shown.value = true %}
-                                    {% else %}
-                                    <li class="less-common" style="display: none;">{{ ingredient_name }}: {{
-                                        count_list[0] }}件</li>
-                                    {% endif %}
-                                    {% endif %}
-                                    {% endfor %}
-                                </ul>
-                    </div>
-                    {% endif %}
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
-
-        <div class="steps-col">
-            <h3>よくある手順</h3>
-            {% if details.standard_steps %}
-            <ul class="steps-list" data-recipe-index="{{ loop.index0 }}">
-                {% for step in details.standard_steps %}
-                <li class="step-item {% if loop.index0 >= 20 %}initially-hidden{% endif %}"
-                    data-index="{{ loop.index0 }}">
-                    ({{ step.food_name }}, {{ step.action }}) ({{ step.count }}件)
-                </li>
-                {% endfor %}
-            </ul>
-            {% if details.standard_steps|length > 20 %}
-            <button class="show-more-steps" data-recipe-index="{{ loop.index0 }}" data-current-count="20"
-                data-total-count="{{ details.standard_steps|length }}">
-                もっと表示 (残り{{ details.standard_steps|length - 20 }}件)
-            </button>
-            {% endif %}
-            {% else %}
-            <p>手順情報はありません。</p>
-            {% endif %}
-        </div>
     </div>
     </div>
     {% endfor %}
@@ -594,6 +484,54 @@
             input.placeholder = 'キーワード';
             input.value = val;
 
+            // Space key logic
+            // Space key logic
+            input.addEventListener('input', function (e) {
+                if (e.isComposing) return; // Ignore IME composition
+                const val = this.value;
+                if (val.endsWith(' ') || val.endsWith('　')) {
+                    const trimmed = val.trim();
+                    if (trimmed.length > 0) {
+                        this.value = trimmed;
+                        // Add new row logic
+                        createConditionRow();
+                    } else {
+                        this.value = '';
+                    }
+                }
+            });
+
+            // Handle IME confirmation (for full-width space)
+            input.addEventListener('compositionend', function (e) {
+                const val = this.value;
+                if (val.endsWith(' ') || val.endsWith('　')) {
+                    const trimmed = val.trim();
+                    if (trimmed.length > 0) {
+                        this.value = trimmed;
+                        createConditionRow();
+                    } else {
+                        this.value = '';
+                    }
+                }
+            });
+
+            // Backspace key logic (remove empty row)
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Backspace' && this.value === '') {
+                    const allRows = conditionsContainer.querySelectorAll('.condition-row');
+                    if (allRows.length > 1) {
+                        // Find index of current row
+                        let index = Array.from(allRows).indexOf(row);
+                        if (index > 0) {
+                            e.preventDefault();
+                            const prevInput = allRows[index - 1].querySelector('input');
+                            row.remove();
+                            prevInput.focus();
+                        }
+                    }
+                }
+            });
+
             row.appendChild(select);
             row.appendChild(input);
 
@@ -611,6 +549,11 @@
             row.appendChild(removeBtn);
 
             conditionsContainer.appendChild(row);
+
+            // Use setTimeout to ensure DOM is ready and avoid event conflicts
+            setTimeout(() => {
+                input.focus();
+            }, 10);
         }
 
         // --- 初期化処理 ---
@@ -669,9 +612,10 @@
     </script>
     <!-- User ID Display -->
     <div id="user-id-display"
-        style="position: fixed; top: 20%; right: 20px; background-color: rgba(255, 255, 255, 0.9); border: 1px solid #ccc; padding: 10px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 9999; font-family: monospace; font-size: 0.9em;">
-        <div style="font-weight: bold; margin-bottom: 5px; font-size: 0.8em; color: #555;">User ID</div>
-        <div id="user-id-text" style="display:inline-block; margin-right: 5px; font-weight: bold;">{{ user_id }}</div>
+        style="position: fixed; bottom: 10px; right: 10px; background-color: rgba(255, 255, 255, 0.9); border: 1px solid #ccc; padding: 5px 10px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 9999; font-family: monospace; font-size: 0.8em;">
+        <div style="font-weight: bold; margin-bottom: 2px; font-size: 0.8em; color: #555;">User ID</div>
+        <div id="user-id-text" style="display:inline-block; margin-right: 5px; font-weight: bold;">{{ user_id[:5] }}
+        </div>
         <button onclick="copyUserId()" style="font-size: 0.8em; cursor: pointer; padding: 2px 6px;">Copy</button>
     </div>
     <script>

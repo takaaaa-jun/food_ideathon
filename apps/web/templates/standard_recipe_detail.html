@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>{{ recipe.category_medium }} - 基準レシピ詳細</title>
+    <style>
+        body {
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+            font-size: 18px;
+            max-width: 1000px;
+            /* Wider to accommodate grid */
+            margin: 2em auto;
+            padding: 0 1em;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 2em;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #d63384;
+            margin-bottom: 0.5em;
+        }
+
+        .meta {
+            color: #555;
+            margin-bottom: 1.5em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 1em;
+        }
+
+        .tool-link {
+            background-color: #e2e3e5;
+            padding: 1em;
+            border-radius: 5px;
+            text-align: center;
+            margin: 1.5em 0;
+        }
+
+        .tool-link a {
+            font-weight: bold;
+            color: #0d6efd;
+            font-size: 1.1em;
+        }
+
+        .back-link {
+            display: block;
+            margin-bottom: 1em;
+            text-decoration: none;
+            color: #007bff;
+        }
+
+        /* Copied Styles from standard_recipes.html */
+        .recipe-details-grid {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .ingredients-col {
+            flex: 2;
+        }
+
+        .steps-col {
+            flex: 1;
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .ingredient-category {
+            margin-bottom: 1em;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .ingredient-category h4 {
+            margin: 0;
+            padding: 10px;
+            background-color: #e9ecef;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ingredient-category h4.toggle-button:hover {
+            background-color: #dde2e6;
+        }
+
+        .ingredient-category ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: block;
+            /* Default open */
+        }
+
+        .ingredient-category h4.closed+ul {
+            display: none;
+        }
+
+        .ingredient-category li {
+            padding: 5px 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 0.9em;
+        }
+
+        .arrow {
+            font-size: 0.8em;
+            transition: transform 0.2s;
+        }
+
+        .ingredient-category h4.closed .arrow {
+            transform: rotate(-90deg);
+        }
+
+        .step-item {
+            margin-bottom: 0.8em;
+            padding: 0.5em;
+            background-color: #fff;
+            border-left: 3px solid #007bff;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            font-size: 0.9em;
+        }
+
+        .other-categories-block {
+            margin-top: 20px;
+        }
+
+        .other-toggle-button {
+            cursor: pointer;
+            color: #0d6efd;
+        }
+
+        .show-more-steps {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            padding: 0.5em 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-top: 1em;
+            width: 100%;
+        }
+
+        .initially-hidden {
+            display: none;
+        }
+
+        @media (max-width: 700px) {
+            .recipe-details-grid {
+                flex-direction: column;
+            }
+        }
+    </style>
+    <!-- jQuery for toggling (same as search page) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+
+<body>
+    <a href="{{ url_for('standard.standard_search_home') }}" class="back-link">← 検索画面に戻る</a>
+
+    <div class="container">
+        <h1>{{ recipe.category_medium }}</h1>
+
+        <div class="meta">
+            <p><strong>レシピ数:</strong> {{ recipe.recipe_count }}</p>
+            <p><strong>平均調理時間:</strong> {{ cooking_time_map.get(recipe.cooking_time[0], '情報なし') if recipe.cooking_time
+                else '情報なし' }}</p>
+            <p><strong>平均ステップ数:</strong> {{ recipe.steps.average_steps }}</p>
+        </div>
+
+        <div class="tool-link">
+            <p>このレシピの手順を作成・編集する:</p>
+            <a href="http://133.35.129.9:5174/recipe/{{ recipe.id }}" target="_blank">🛠 手順作成ツールへ移動 (ID: {{ recipe.id
+                }})</a>
+        </div>
+
+        <!-- Reuse the exact grid layout and logic from standard_recipes.html -->
+        <div class="recipe-details-grid">
+            <div class="ingredients-col">
+                <h3>材料の内訳</h3>
+                <!-- Use details variable as 'recipe' -->
+                {% set details = recipe %}
+                {% set recipe_threshold = details.recipe_count * 0.2 %}
+
+                {% for category_name, ingredients in details.ingredient.items() %}
+                {% if ingredients.all[0] >= recipe_threshold %}
+                <div class="ingredient-category">
+                    {% set has_less_common = namespace(found=false) %}
+                    {% for ingredient_name, count_list in ingredients.items() %}
+                    {% if ingredient_name != 'all' and count_list[0] < ingredients.all[0] * 0.2 %} {% set
+                        has_less_common.found=true %} {% endif %} {% endfor %} <h4 class="toggle-button">
+                        {{ category_name }} (合計: {{ ingredients.all[0] }}件)
+                        {% if has_less_common.found %}
+                        <span class="arrow">▼</span>
+                        {% endif %}
+                        </h4>
+                        <ul>
+                            {% set threshold = ingredients.all[0] * 0.2 %}
+                            {% set visible_count = namespace(value=0) %}
+                            {% for ingredient_name, count_list in ingredients|dictsort(by='value', reverse=True) %}
+                            {% if ingredient_name != 'all' and count_list[0] >= threshold %}
+                            {% set visible_count.value = visible_count.value + 1 %}
+                            {% endif %}
+                            {% endfor %}
+
+                            {% set first_item_shown = namespace(value=false) %}
+                            {% for ingredient_name, count_list in ingredients|dictsort(by='value', reverse=True) %}
+                            {% if ingredient_name != 'all' %}
+                            {% if count_list[0] >= threshold %}
+                            <li>{{ ingredient_name }}: {{ count_list[0] }}件</li>
+                            {% set first_item_shown.value = true %}
+                            {% elif visible_count.value == 0 and not first_item_shown.value %}
+                            <li>{{ ingredient_name }}: {{ count_list[0] }}件</li>
+                            {% set first_item_shown.value = true %}
+                            {% else %}
+                            <li class="less-common" style="display: none;">{{ ingredient_name }}: {{ count_list[0] }}件
+                            </li>
+                            {% endif %}
+                            {% endif %}
+                            {% endfor %}
+                        </ul>
+                </div>
+                {% endif %}
+                {% endfor %}
+
+                <div class="other-categories-block">
+                    <h3 class="other-toggle-button">その他の分類 <span class="arrow">▼</span></h3>
+                    <div class="other-toggle-content" style="display: none;">
+                        {% for category_name, ingredients in details.ingredient.items() %}
+                        {% if ingredients.all[0] < recipe_threshold %} <div class="ingredient-category">
+                            {% set has_less_common = namespace(found=false) %}
+                            {% for ingredient_name, count_list in ingredients.items() %}
+                            {% if ingredient_name != 'all' and count_list[0] < ingredients.all[0] * 0.2 %} {% set
+                                has_less_common.found=true %} {% endif %} {% endfor %} <h4 class="toggle-button">
+                                {{ category_name }} (合計: {{ ingredients.all[0] }}件)
+                                {% if has_less_common.found %}
+                                <span class="arrow">▼</span>
+                                {% endif %}
+                                </h4>
+                                <ul>
+                                    {% set threshold = ingredients.all[0] * 0.2 %}
+                                    {% set visible_count = namespace(value=0) %}
+                                    {% for ingredient_name, count_list in ingredients|dictsort(by='value',
+                                    reverse=True) %}
+                                    {% if ingredient_name != 'all' and count_list[0] >= threshold %}
+                                    {% set visible_count.value = visible_count.value + 1 %}
+                                    {% endif %}
+                                    {% endfor %}
+
+                                    {% set first_item_shown = namespace(value=false) %}
+                                    {% for ingredient_name, count_list in ingredients|dictsort(by='value',
+                                    reverse=True) %}
+                                    {% if ingredient_name != 'all' %}
+                                    {% if count_list[0] >= threshold %}
+                                    <li>{{ ingredient_name }}: {{ count_list[0] }}件</li>
+                                    {% set first_item_shown.value = true %}
+                                    {% elif visible_count.value == 0 and not first_item_shown.value %}
+                                    <li>{{ ingredient_name }}: {{ count_list[0] }}件</li>
+                                    {% set first_item_shown.value = true %}
+                                    {% else %}
+                                    <li class="less-common" style="display: none;">{{ ingredient_name }}: {{
+                                        count_list[0] }}件</li>
+                                    {% endif %}
+                                    {% endif %}
+                                    {% endfor %}
+                                </ul>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="steps-col">
+            <h3>よくある手順</h3>
+            {% if details.standard_steps %}
+            <ul class="steps-list">
+                {% for step in details.standard_steps %}
+                <li class="step-item {% if loop.index0 >= 20 %}initially-hidden{% endif %}">
+                    ({{ step.food_name }}, {{ step.action }}) ({{ step.count }}件)
+                </li>
+                {% endfor %}
+            </ul>
+            {% if details.standard_steps|length > 20 %}
+            <button class="show-more-steps" data-current-count="20"
+                data-total-count="{{ details.standard_steps|length }}">
+                もっと表示 (残り{{ details.standard_steps|length - 20 }}件)
+            </button>
+            {% endif %}
+            {% else %}
+            <p>手順情報はありません。</p>
+            {% endif %}
+        </div>
+    </div>
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            // Toggle ingredient categories
+            $('.toggle-button').on('click', function () {
+                var button = $(this);
+                button.toggleClass('open');
+                var ul = button.next('ul');
+                var hiddenItems = ul.find('.less-common');
+
+                if (hiddenItems.length > 0) {
+                    var isHidden = hiddenItems.first().css('display') === 'none';
+                    if (isHidden) {
+                        hiddenItems.show();
+                        button.find('.arrow').text('▲');
+                    } else {
+                        hiddenItems.hide();
+                        button.find('.arrow').text('▼');
+                    }
+                } else {
+                    // If no hidden items, likely just collapse/expand the whole list
+                    ul.slideToggle();
+                    var arrow = button.find('.arrow');
+                    arrow.text(arrow.text() === '▼' ? '▲' : '▼');
+                }
+            });
+
+            // Toggle 'other' categories block
+            $('.other-toggle-button').on('click', function () {
+                var content = $(this).next('.other-toggle-content');
+                if (content.is(':visible')) {
+                    content.slideUp();
+                    $(this).find('.arrow').text('▼');
+                } else {
+                    content.slideDown();
+                    $(this).find('.arrow').text('▲');
+                }
+            });
+
+            // Toggle less common ingredients
+            // Logic implied from search page: if items are hidden, maybe clicking the category toggles them? 
+            // Standard behavior in search page seemed to be just showing top items. 
+            // The template has 'less-common' class with display: none. 
+            // We'll add a simple handler to toggle them if the user clicks the header widely?
+            // Actually, the search page logic for 'show all ingredients' inside a category isn't explicitly clear 
+            // in the snippet, but the toggle button usually collapses the whole list.
+            // Let's assume the 'less-common' ones just stay hidden or we need a button.
+            // Wait, looking at search page CSS, the arrow rotates. 
+            // We'll stick to the basic collapse behavior.
+
+            // Show more steps
+            $('.show-more-steps').on('click', function () {
+                var button = $(this);
+                var list = button.prev('.steps-list');
+                var items = list.find('.initially-hidden');
+                var currentCount = parseInt(button.attr('data-current-count'));
+                var totalCount = parseInt(button.attr('data-total-count'));
+                var nextCount = currentCount + 20;
+
+                items.slice(0, 20).removeClass('initially-hidden').fadeIn();
+
+                button.attr('data-current-count', nextCount);
+                var remaining = totalCount - nextCount;
+                if (remaining > 0) {
+                    button.text('もっと表示 (残り' + remaining + '件)');
+                } else {
+                    button.hide();
+                }
+            });
+        });
+    </script>
+    <!-- User ID Display -->
+    <div id="user-id-display"
+        style="position: fixed; bottom: 10px; right: 10px; background-color: rgba(255, 255, 255, 0.9); border: 1px solid #ccc; padding: 5px 10px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 9999; font-family: monospace; font-size: 0.8em;">
+        <div style="font-weight: bold; margin-bottom: 2px; font-size: 0.8em; color: #555;">User ID</div>
+        <div id="user-id-text" style="display:inline-block; margin-right: 5px; font-weight: bold;">{{ user_id[:5] }}
+        </div>
+        <button onclick="copyUserId()" style="font-size: 0.8em; cursor: pointer; padding: 2px 6px;">Copy</button>
+    </div>
+    <script>
+        function copyUserId() {
+            const userId = document.getElementById('user-id-text').innerText.trim();
+            const btn = document.querySelector('#user-id-display button');
+            const originalText = btn.innerText;
+
+            const successCallback = () => {
+                btn.innerText = 'Copied!';
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                }, 2000);
+            };
+
+            const failCallback = (err) => {
+                console.error('Copy failed:', err);
+                prompt("Copy this ID:", userId);
+            };
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(userId).then(successCallback).catch(() => {
+                    // Fallback to execCommand if writeText fails (rare but possible)
+                    fallbackCopy(userId, successCallback, failCallback);
+                });
+            } else {
+                fallbackCopy(userId, successCallback, failCallback);
+            }
+        }
+
+        function fallbackCopy(text, onSuccess, onFail) {
+            try {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-9999px";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                if (successful) {
+                    onSuccess();
+                } else {
+                    onFail(new Error("execCommand returned false"));
+                }
+            } catch (err) {
+                onFail(err);
+            }
+        }
+    </script>
+</body>
+
+</html>

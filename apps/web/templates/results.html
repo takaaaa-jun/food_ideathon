@@ -7,6 +7,7 @@
     <style>
         body {
             font-family: sans-serif;
+            font-size: 18px;
             max-width: 800px;
             margin: 2em auto;
             padding: 0 1em;
@@ -319,9 +320,10 @@
 
     <!-- User ID Display -->
     <div id="user-id-display"
-        style="position: fixed; top: 20%; right: 20px; background-color: rgba(255, 255, 255, 0.9); border: 1px solid #ccc; padding: 10px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 9999; font-family: monospace; font-size: 0.9em;">
-        <div style="font-weight: bold; margin-bottom: 5px; font-size: 0.8em; color: #555;">User ID</div>
-        <div id="user-id-text" style="display:inline-block; margin-right: 5px; font-weight: bold;">{{ user_id }}</div>
+        style="position: fixed; bottom: 10px; right: 10px; background-color: rgba(255, 255, 255, 0.9); border: 1px solid #ccc; padding: 5px 10px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 9999; font-family: monospace; font-size: 0.8em;">
+        <div style="font-weight: bold; margin-bottom: 2px; font-size: 0.8em; color: #555;">User ID</div>
+        <div id="user-id-text" style="display:inline-block; margin-right: 5px; font-weight: bold;">{{ user_id[:5] }}
+        </div>
         <button onclick="copyUserId()" style="font-size: 0.8em; cursor: pointer; padding: 2px 6px;">Copy</button>
     </div>
     <script>
@@ -451,6 +453,54 @@
         input.placeholder = 'キーワード';
         input.value = val;
 
+        // Space key logic
+        input.addEventListener('input', function (e) {
+            if (e.isComposing) return; // Ignore IME composition
+            const val = this.value;
+            if (val.endsWith(' ') || val.endsWith('　')) {
+                const trimmed = val.trim();
+                // Check length to avoid empty triggers if user just types spaces
+                if (trimmed.length > 0) {
+                    this.value = trimmed;
+                    // Add new row logic
+                    createConditionRow();
+                } else {
+                    this.value = '';
+                }
+            }
+        });
+
+        // Handle IME confirmation (for full-width space)
+        input.addEventListener('compositionend', function (e) {
+            const val = this.value;
+            if (val.endsWith(' ') || val.endsWith('　')) {
+                const trimmed = val.trim();
+                if (trimmed.length > 0) {
+                    this.value = trimmed;
+                    createConditionRow();
+                } else {
+                    this.value = '';
+                }
+            }
+        });
+
+        // Backspace key logic (remove empty row)
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Backspace' && this.value === '') {
+                const allRows = conditionsContainer.querySelectorAll('.condition-row');
+                if (allRows.length > 1) {
+                    // Find index of current row
+                    let index = Array.from(allRows).indexOf(row);
+                    if (index > 0) {
+                        e.preventDefault();
+                        const prevInput = allRows[index - 1].querySelector('input');
+                        row.remove();
+                        prevInput.focus();
+                    }
+                }
+            }
+        });
+
         row.appendChild(select);
         row.appendChild(input);
 
@@ -470,6 +520,12 @@
         row.appendChild(removeBtn);
 
         conditionsContainer.appendChild(row);
+
+        // Use setTimeout to ensure DOM is ready and avoid event conflicts
+        setTimeout(() => {
+            input.focus();
+        }, 10);
+
     }
 
     // --- 初期化処理 ---
