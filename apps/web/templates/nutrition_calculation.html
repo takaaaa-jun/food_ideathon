@@ -17,6 +17,27 @@
             --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
         }
 
+        /* --- Layout --- */
+        .container.top-section {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            /* Fixed width for staples */
+            gap: 24px;
+            align-items: start;
+        }
+
+        .container.bottom-section {
+            margin-top: 24px;
+            display: block;
+            /* Full width */
+        }
+
+        @media (max-width: 900px) {
+            .container.top-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
         html {
             overflow-y: scroll;
         }
@@ -50,18 +71,8 @@
             margin-bottom: 20px;
         }
 
-        .container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
-            align-items: start;
-        }
+        /* Replaced by .top-section and .bottom-section logic */
 
-        @media (max-width: 900px) {
-            .container {
-                grid-template-columns: 1fr;
-            }
-        }
 
         .card {
             background: var(--card-bg);
@@ -74,9 +85,13 @@
         /* --- Staple Foods (Quick Add) --- */
         .staple-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            grid-template-columns: 1fr;
+            /* Vertical stack */
             gap: 12px;
             margin-top: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+            /* Scroll if too many staples */
         }
 
         .staple-card {
@@ -86,6 +101,23 @@
             text-align: center;
             transition: transform 0.2s, box-shadow 0.2s;
             background: #fff;
+        }
+
+        /* --- Recipe Table Scroll Wrapper --- */
+        .recipe-scroll-wrapper {
+            max-height: 280px;
+            /* Trigger scroll after ~4 items */
+            overflow-y: auto;
+            overflow-x: auto;
+            border-top: 1px solid #eee;
+        }
+
+        #recipeTable thead th {
+            position: sticky;
+            top: 0;
+            background-color: #f8f9fa;
+            z-index: 10;
+            box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
         }
 
         .staple-card:hover {
@@ -180,32 +212,51 @@
         }
 
         /* --- Tables --- */
+        #ingredientsTable_wrapper {
+            min-height: 800px;
+        }
+
         table.dataTable {
             border-collapse: separate;
             border-spacing: 0;
             width: 100% !important;
+            /* Remove fixed min-width since it's now full width container */
             table-layout: fixed;
-            /* Stop layout jitter */
         }
 
+        #ingredientsTable th {
+            font-size: 0.9em;
+            padding: 10px 4px;
+            white-space: nowrap;
+        }
+
+        /* With ~1100px width, Name Gets ~300px, others ~130px each */
         #ingredientsTable th:nth-child(1) {
-            width: 40%;
+            width: 28%;
         }
 
         #ingredientsTable th:nth-child(2) {
-            width: 15%;
+            width: 12%;
         }
 
         #ingredientsTable th:nth-child(3) {
-            width: 15%;
+            width: 12%;
         }
 
         #ingredientsTable th:nth-child(4) {
-            width: 15%;
+            width: 12%;
         }
 
         #ingredientsTable th:nth-child(5) {
-            width: 15%;
+            width: 12%;
+        }
+
+        #ingredientsTable th:nth-child(6) {
+            width: 12%;
+        }
+
+        #ingredientsTable th:nth-child(7) {
+            width: 12%;
         }
 
         table.dataTable thead th {
@@ -229,11 +280,16 @@
             padding: 12px 8px;
             border-bottom: 1px solid #eee;
             text-align: right;
+            white-space: nowrap;
+            /* Prevent header wrapping */
         }
 
         #recipeTable th:first-child,
         #recipeTable td:first-child {
             text-align: left;
+            white-space: normal;
+            /* Name can wrap */
+            min-width: 150px;
         }
 
         /* --- Buttons --- */
@@ -322,11 +378,9 @@
     </div>
     {% endif %}
 
-    <div class="container">
-
-        <!-- LEFT COLUMN: Sources -->
-        <div class="source-column">
-
+    <div class="container top-section">
+        <!-- LEFT COLUMN: Sources (Staples) -->
+        <div class="source-column-top">
             <!-- STAPLE FOODS CARD -->
             <div class="card">
                 <h3>🍚 よく使う主食 (クイック追加)</h3>
@@ -351,63 +405,11 @@
                     {% endfor %}
                 </div>
             </div>
-
-            <!-- INGREDIENTS LIST CARD -->
-            <div class="card">
-                <h3>🥕 食品リストから選択 (100gあたり)</h3>
-                <p style="font-size: 0.9em; color: #666; margin-bottom: 15px;">行をクリックして下のフォームから追加してください。</p>
-
-                <!-- Selection Panel (Sticky bottom of card conceptually) -->
-                <div class="selection-panel" id="selectionArea" style="margin-bottom: 20px;">
-                    <div class="selection-info">
-                        選択中: <strong id="selectedName">なし</strong>
-                    </div>
-                    <div class="selection-controls">
-                        <label>
-                            <input type="number" id="weightInput" min="0" step="0.1" value="100"
-                                style="padding: 6px; width: 80px; border-radius: 4px; border: 1px solid #ccc;">
-                            g
-                        </label>
-                        <button id="addBtn" class="btn btn-primary" disabled>↓ レシピに追加</button>
-                    </div>
-                </div>
-
-                <table id="ingredientsTable" class="display" style="width:100%">
-                    <thead>
-                        <tr>
-                            <th>食品名</th>
-                            <th>kCal</th>
-                            <th>P(g)</th>
-                            <th>F(g)</th>
-                            <th>C(g)</th>
-                            <th>Fib(g)</th>
-                            <th>Salt(g)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in ingredients %}
-                        <tr data-id="{{ item.id }}" data-name="{{ item.name }}" data-energy="{{ item.energy }}"
-                            data-protein="{{ item.protein }}" data-fat="{{ item.fat }}" data-carbs="{{ item.carbs }}"
-                            data-fiber="{{ item.fiber }}" data-salt="{{ item.salt }}">
-                            <td>{{ item.name }}</td>
-                            <td>{{ "%.1f"|format(item.energy) }}</td>
-                            <td>{{ "%.1f"|format(item.protein) }}</td>
-                            <td>{{ "%.1f"|format(item.fat) }}</td>
-                            <td>{{ "%.1f"|format(item.carbs) }}</td>
-                            <td>{{ "%.1f"|format(item.fiber) }}</td>
-                            <td>{{ "%.1f"|format(item.salt) }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-
-
-            </div>
         </div>
 
-        <!-- RIGHT COLUMN: Calculation -->
-        <div class="calc-column">
-            <div class="card" style="position: sticky; top: 20px;">
+        <!-- RIGHT COLUMN: Calculation (Recipe) -->
+        <div class="calc-column-top">
+            <div class="card">
                 <h2>📝 現在のレシピ</h2>
 
                 <!-- Totals Dashboard -->
@@ -448,7 +450,7 @@
                     </div>
                 </div>
 
-                <div style="overflow-x: auto;">
+                <div class="recipe-scroll-wrapper">
                     <table id="recipeTable">
                         <thead>
                             <tr>
@@ -456,10 +458,10 @@
                                 <th>量</th>
                                 <th>kCal</th>
                                 <th>P</th>
-                                <th>F</th>
-                                <th>C</th>
-                                <th>Fib</th>
-                                <th>Salt</th>
+                                <th>脂質(g)</th>
+                                <th>炭水化物(g)</th>
+                                <th>食物繊維(g)</th>
+                                <th>食塩相当量(g)</th>
                                 <th></th>
                             </tr>
                         </thead>
@@ -472,7 +474,58 @@
                 <button id="decideBtn" class="btn btn-decide">決定 (レシピ完了)</button>
             </div>
         </div>
+    </div>
 
+    <!-- BOTTOM SECTION: Ingredients List -->
+    <div class="container bottom-section">
+        <div class="card ingredients-card-full">
+            <h3>🥕 食品リストから選択 (100gあたり)</h3>
+            <p style="font-size: 0.9em; color: #666; margin-bottom: 15px;">行をクリックして下のフォームから追加してください。</p>
+
+            <!-- Selection Panel -->
+            <div class="selection-panel" id="selectionArea" style="margin-bottom: 20px;">
+                <div class="selection-info">
+                    選択中: <strong id="selectedName">なし</strong>
+                </div>
+                <div class="selection-controls">
+                    <label>
+                        <input type="number" id="weightInput" min="0" step="0.1" value="100"
+                            style="padding: 6px; width: 80px; border-radius: 4px; border: 1px solid #ccc;">
+                        g
+                    </label>
+                    <button id="addBtn" class="btn btn-primary" disabled>↓ レシピに追加</button>
+                </div>
+            </div>
+
+            <table id="ingredientsTable" class="display" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>食品名</th>
+                        <th>kCal</th>
+                        <th>P(g)</th>
+                        <th>脂質(g)</th>
+                        <th>炭水化物(g)</th>
+                        <th>食物繊維(g)</th>
+                        <th>食塩相当量(g)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in ingredients %}
+                    <tr data-id="{{ item.id }}" data-name="{{ item.name }}" data-energy="{{ item.energy }}"
+                        data-protein="{{ item.protein }}" data-fat="{{ item.fat }}" data-carbs="{{ item.carbs }}"
+                        data-fiber="{{ item.fiber }}" data-salt="{{ item.salt }}">
+                        <td>{{ item.name }}</td>
+                        <td>{{ "%.1f"|format(item.energy) }}</td>
+                        <td>{{ "%.1f"|format(item.protein) }}</td>
+                        <td>{{ "%.1f"|format(item.fat) }}</td>
+                        <td>{{ "%.1f"|format(item.carbs) }}</td>
+                        <td>{{ "%.1f"|format(item.fiber) }}</td>
+                        <td>{{ "%.1f"|format(item.salt) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <script>

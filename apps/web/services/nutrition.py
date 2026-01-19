@@ -6,7 +6,7 @@ import logging
 STAPLE_FOODS = [
     {
         'id': 'staple_1',
-        'name': '白米茶碗1杯',
+        'name': '白米茶碗1杯', # こめ　［水稲めし］　精白米　うるち米
         'unit': '杯',
         'energy': 234,
         'protein': 3.75,
@@ -17,7 +17,7 @@ STAPLE_FOODS = [
     },
     {
         'id': 'staple_2',
-        'name': '食パン6枚切り1枚',
+        'name': '食パン6枚切り1枚', # こむぎ　［パン類］　角形食パン　食パン
         'unit': '枚',
         'energy': 148.8,
         'protein': 5.34,
@@ -28,25 +28,25 @@ STAPLE_FOODS = [
     },
     {
         'id': 'staple_3',
-        'name': '味噌汁お碗1杯',
+        'name': '味噌汁お碗1杯', # https://foodservice.ajinomoto.co.jp/recipepro/recipe/25984/
         'unit': '杯',
         'energy': 59,
         'protein': 5.2,
         'fat': 3.1,
         'carbs': 3.6,
-        'fiber': 1.0,
-        'salt': 1.5
+        'fiber': 1.3,
+        'salt': 1.8
     },
     {
         'id': 'staple_4',
-        'name': 'コーンスープ1杯',
+        'name': 'コーンスープ1杯', # https://calorie.slism.jp/118004/
         'unit': '杯',
         'energy': 81,
         'protein': 1.54,
         'fat': 2.6,
         'carbs': 12.81,
-        'fiber': 1.0, 
-        'salt': 1.0
+        'fiber': 0.0, 
+        'salt': 1.35
     }
 ]
 
@@ -78,7 +78,7 @@ def load_nutrition_data(data_dir):
                     'fat': safe_float(row[6]),
                     'carbs': safe_float(row[7]),
                     'fiber': safe_float(row[8]),
-                    'salt': safe_float(row[9])
+                    'salt': abs(safe_float(row[9]))
                 })
         return ingredients
     except Exception as e:

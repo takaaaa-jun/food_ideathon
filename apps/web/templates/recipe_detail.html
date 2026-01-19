@@ -160,6 +160,12 @@
                 <li><span class="label">炭水化物:</span> <span class="value">{{ "%.1f"|format(recipe.nutrition_totals.carbs)
                         }} g</span></li>
             </ul>
+            <ul style="margin-top: 10px; border-top: 1px dashed #ccc; padding-top: 10px;">
+                <li><span class="label">食物繊維:</span> <span class="value">{{ "%.1f"|format(recipe.nutrition_totals.fiber)
+                        }} g</span></li>
+                <li><span class="label">食塩相当量:</span> <span class="value">{{ "%.1f"|format(recipe.nutrition_totals.salt)
+                        }} g</span></li>
+            </ul>
         </div>
 
         {% if recipe.nutrition_per_serving and recipe.nutrition_ratios %}
@@ -167,18 +173,29 @@
             <h3>1人分の栄養素 ({{ recipe.serving_size }}人分として計算)</h3>
             <ul>
                 <li><span class="label">エネルギー:</span> <span class="value">{{
-                        "%.1f"|format(recipe.nutrition_per_serving.energy) }} / {{ recipe.standards.energy }} [{{
-                        "%.0f"|format(recipe.nutrition_ratios.energy) }}%]</span></li>
+                        "%.1f"|format(recipe.nutrition_per_serving.energy) }} kcal</span> <span class="small-note">({{
+                        "%.0f"|format(recipe.nutrition_ratios.energy) }}%) 基準: {{ recipe.standards.energy }}kcal</span>
+                </li>
                 <li><span class="label">たんぱく質:</span> <span class="value">{{
-                        "%.1f"|format(recipe.nutrition_per_serving.protein) }} / {{ recipe.standards.protein }} [{{
-                        "%.0f"|format(recipe.nutrition_ratios.protein) }}%]</span></li>
+                        "%.1f"|format(recipe.nutrition_per_serving.protein) }} g</span> <span class="small-note">({{
+                        "%.0f"|format(recipe.nutrition_ratios.protein) }}%) 基準: {{ recipe.standards.protein }}g</span>
+                </li>
                 <li><span class="label">脂質:</span> <span class="value">{{
-                        "%.1f"|format(recipe.nutrition_per_serving.fat) }} / {{ recipe.standards.fat }} [{{
-                        "%.0f"|format(recipe.nutrition_ratios.fat) }}%]</span></li>
+                        "%.1f"|format(recipe.nutrition_per_serving.fat) }} g</span> <span class="small-note">({{
+                        "%.0f"|format(recipe.nutrition_ratios.fat) }}%) 基準: {{ recipe.standards.fat }}g</span></li>
                 <li><span class="label">炭水化物:</span> <span class="value">{{
-                        "%.1f"|format(recipe.nutrition_per_serving.carbs) }} / {{ recipe.standards.carbs }} [{{
-                        "%.0f"|format(recipe.nutrition_ratios.carbs) }}%]</span></li>
+                        "%.1f"|format(recipe.nutrition_per_serving.carbs) }} g</span> <span class="small-note">({{
+                        "%.0f"|format(recipe.nutrition_ratios.carbs) }}%) 基準: {{ recipe.standards.carbs }}g</span></li>
             </ul>
+            <ul style="margin-top: 10px; border-top: 1px dashed #ccc; padding-top: 10px;">
+                <li><span class="label">食物繊維:</span> <span class="value">{{
+                        "%.1f"|format(recipe.nutrition_per_serving.fiber) }} g</span> <span class="small-note">({{
+                        "%.0f"|format(recipe.nutrition_ratios.fiber) }}%) 基準: {{ recipe.standards.fiber }}g</span></li>
+                <li><span class="label">食塩相当量:</span> <span class="value">{{
+                        "%.1f"|format(recipe.nutrition_per_serving.salt) }} g</span> <span class="small-note">({{
+                        "%.0f"|format(recipe.nutrition_ratios.salt) }}%) 基準: {{ recipe.standards.salt }}g</span></li>
+            </ul>
+            <p style="font-size: 0.8em; color: #888; text-align: right; margin-top: 5px;">※カッコ内は基準摂取量に対する充足率</p>
         </div>
         {% endif %}
 
@@ -191,11 +208,11 @@
                         <strong>{{ ingredient.name }}</strong>: {{ ingredient.quantity }}
                         <div class="ingredient-nutrition">
                             {% if ingredient.nutrition.normalized_quantity_g > 0 %}
-                            <span>[ {{ "%.1f"|format(ingredient.nutrition.energy) }} kcal ]</span>
+                            <!-- <span>[ {{ "%.1f"|format(ingredient.nutrition.energy) }} kcal ]</span> -->
                             <span class="small-note">({{ "%.0f"|format(ingredient.nutrition.normalized_quantity_g) }}g
                                 として計算)</span>
                             {% else %}
-                            <span class="small-note">[量不明のため計算不可]</span>
+                            <span class="small-note">[材料名不明または量不明のため計算不可]</span>
                             {% endif %}
                         </div>
                     </li>

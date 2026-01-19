@@ -179,13 +179,15 @@ def get_recipe_details(cursor, recipe_id):
             
             ist.normalized_name,
             iu.normalized_quantity,
-            n.enerc_kcal, n.prot, n.fat, n.choavldf, n.fib,
+            n.enerc_kcal, n.prot, n.fat, n.choavldf, n.fib, n.nacl_eq,
 
             rni.serving_size,
             rni.calories AS total_calories,
             rni.protein AS total_protein,
             rni.fat AS total_fat,
-            rni.carbohydrates AS total_carbohydrates
+            rni.carbohydrates AS total_carbohydrates,
+            rni.fiber AS total_fiber,
+            rni.salt AS total_salt
         FROM recipes AS r
         LEFT JOIN ingredients AS i ON r.id = i.recipe_id
         LEFT JOIN steps AS s ON r.id = s.recipe_id

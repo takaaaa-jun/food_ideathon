@@ -17,7 +17,9 @@ STANDARDS = {
     'energy': 734,
     'protein': 31,
     'fat': 21,
-    'carbs': 106
+    'carbs': 106,
+    'fiber': 7,
+    'salt': 2.5
 }
 
 def process_recipe_rows(recipes_dict):
@@ -33,7 +35,9 @@ def process_recipe_rows(recipes_dict):
                 'energy': recipe_data['nutrition_totals']['energy'] / serving_count,
                 'protein': recipe_data['nutrition_totals']['protein'] / serving_count,
                 'fat': recipe_data['nutrition_totals']['fat'] / serving_count,
-                'carbs': recipe_data['nutrition_totals']['carbs'] / serving_count
+                'carbs': recipe_data['nutrition_totals']['carbs'] / serving_count,
+                'fiber': recipe_data['nutrition_totals'].get('fiber', 0) / serving_count,
+                'salt': recipe_data['nutrition_totals'].get('salt', 0) / serving_count
             }
             
             nutrition_per_serving = per_serving
@@ -42,7 +46,9 @@ def process_recipe_rows(recipes_dict):
                 'energy': (per_serving['energy'] / STANDARDS['energy']) * 100,
                 'protein': (per_serving['protein'] / STANDARDS['protein']) * 100,
                 'fat': (per_serving['fat'] / STANDARDS['fat']) * 100,
-                'carbs': (per_serving['carbs'] / STANDARDS['carbs']) * 100
+                'carbs': (per_serving['carbs'] / STANDARDS['carbs']) * 100,
+                'fiber': (per_serving['fiber'] / STANDARDS['fiber']) * 100,
+                'salt': (per_serving['salt'] / STANDARDS['salt']) * 100
             }
             
             final_recipe = {
@@ -88,7 +94,9 @@ def build_recipes_dict(all_rows):
                     'energy': row.get('total_calories') or 0,
                     'protein': row.get('total_protein') or 0,
                     'fat': row.get('total_fat') or 0,
-                    'carbs': row.get('total_carbohydrates') or 0
+                    'carbs': row.get('total_carbohydrates') or 0,
+                    'fiber': row.get('total_fiber') or 0,
+                    'salt': row.get('total_salt') or 0
                 },
                 'calculated_nutrition': {
                     'energy': 0, 'protein': 0, 'fat': 0, 'carbs': 0
