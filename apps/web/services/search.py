@@ -82,7 +82,9 @@ def search_recipes(cursor, search_query, start_id=1, limit=10):
                 total_est = 0
                 for syn in group:
                     cursor.execute("SELECT count(*) as cnt FROM ingredients WHERE name = %s", (syn,))
-                    total_est += cursor.fetchone()['cnt']
+                    row = cursor.fetchone()
+                    if row:
+                        total_est += row['cnt']
                 sorted_inclusions.append({'group': group, 'count': total_est})
             
             sorted_inclusions.sort(key=lambda x: x['count'])
@@ -362,6 +364,9 @@ def search_standard_recipes(cursor, search_query, search_mode='recipe'):
             name = row['ingredient_name']
             count = row['count']
             
+            if name == 'all':
+                continue
+
             if group not in recipes_data[r_id]['ingredient']:
                 recipes_data[r_id]['ingredient'][group] = {'all': [0]}
             
@@ -369,8 +374,13 @@ def search_standard_recipes(cursor, search_query, search_mode='recipe'):
                  recipes_data[r_id]['ingredient'][group][name] = [0]
 
             recipes_data[r_id]['ingredient'][group][name][0] = count
+            recipes_data[r_id]['ingredient'][group][name][0] = count
             recipes_data[r_id]['ingredient'][group]['all'][0] += count
 
+    # Sort categories by total count descending for each recipe
+    for r_id in recipes_data:
+        sorted_ingredients = dict(sorted(recipes_data[r_id]['ingredient'].items(), key=lambda item: item[1]['all'][0], reverse=True))
+        recipes_data[r_id]['ingredient'] = sorted_ingredients
     # 3. Steps
     sql_get_steps = f"SELECT * FROM standard_recipe_steps WHERE standard_recipe_id IN ({placeholders}) ORDER BY count DESC"
     cursor.execute(sql_get_steps, target_ids)
@@ -424,6 +434,9 @@ def get_standard_recipe_details(cursor, recipe_id):
         name = row['ingredient_name']
         count = row['count']
         
+        if name == 'all':
+            continue
+            
         if grp not in ingredients_data:
             ingredients_data[grp] = {'all': [0]}
             
@@ -431,9 +444,11 @@ def get_standard_recipe_details(cursor, recipe_id):
             ingredients_data[grp][name] = [0]
             
         ingredients_data[grp][name][0] = count
-        ingredients_data[grp]['all'][0] += count
-        
-    recipe['ingredient'] = ingredients_data # Use 'ingredient' key to match search results template
+        ingredients_data[grp]['all'][0] += count        
+    
+    # Sort categories by total count descending
+    sorted_ingredients_data = dict(sorted(ingredients_data.items(), key=lambda item: item[1]['all'][0], reverse=True))
+    recipe['ingredient'] = sorted_ingredients_data # Use 'ingredient' key to match search results template
 
     # 3. Steps
     cursor.execute("""

@@ -4,6 +4,16 @@ from services.nutrition import STAPLE_FOODS, load_nutrition_data
 
 nutrition_bp = Blueprint('nutrition', __name__)
 
+
+STANDARDS = {
+    'energy': 734,
+    'protein': 31,
+    'fat': 21,
+    'carbs': 106,
+    'fiber': 7,
+    'salt': 2.5
+}
+
 @nutrition_bp.route('/nutrition_calculation')
 def nutrition_calculation():
     """栄養計算ページを表示する"""
@@ -13,6 +23,6 @@ def nutrition_calculation():
     ingredients = load_nutrition_data(data_dir)
     
     if not ingredients:
-         return render_template('nutrition_calculation.html', error="データの読み込みに失敗しました。", ingredients=[], staple_foods=STAPLE_FOODS)
+         return render_template('nutrition_calculation.html', error="データの読み込みに失敗しました。", ingredients=[], staple_foods=STAPLE_FOODS, standards=STANDARDS)
 
-    return render_template('nutrition_calculation.html', ingredients=ingredients, staple_foods=STAPLE_FOODS)
+    return render_template('nutrition_calculation.html', ingredients=ingredients, staple_foods=STAPLE_FOODS, standards=STANDARDS)

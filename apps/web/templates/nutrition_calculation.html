@@ -361,6 +361,12 @@
     <!-- DataTables -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script type="application/json" id="standards-data">
+        {{ standards | tojson }}
+    </script>
+    <script>
+        const STANDARDS = JSON.parse(document.getElementById('standards-data').textContent);
+    </script>
 </head>
 
 <body>
@@ -422,31 +428,55 @@
                         <span class="label">エネルギー</span>
                         <span class="value" id="totalEnergy">0</span>
                         <span class="unit">kcal</span>
+                        <div style="font-size: 0.75em; opacity: 0.9; margin-top: 5px;">
+                            <div>基準: {{ standards.energy }}</div>
+                            <div id="pctEnergy">0%</div>
+                        </div>
                     </div>
                     <div class="total-item">
                         <span class="label">たんぱく質</span>
                         <span class="value" id="totalProtein">0</span>
                         <span class="unit">g</span>
+                        <div style="font-size: 0.75em; opacity: 0.9; margin-top: 5px;">
+                            <div>基準: {{ standards.protein }}</div>
+                            <div id="pctProtein">0%</div>
+                        </div>
                     </div>
                     <div class="total-item">
                         <span class="label">脂質</span>
                         <span class="value" id="totalFat">0</span>
                         <span class="unit">g</span>
+                        <div style="font-size: 0.75em; opacity: 0.9; margin-top: 5px;">
+                            <div>基準: {{ standards.fat }}</div>
+                            <div id="pctFat">0%</div>
+                        </div>
                     </div>
                     <div class="total-item">
                         <span class="label">炭水化物</span>
                         <span class="value" id="totalCarbs">0</span>
                         <span class="unit">g</span>
+                        <div style="font-size: 0.75em; opacity: 0.9; margin-top: 5px;">
+                            <div>基準: {{ standards.carbs }}</div>
+                            <div id="pctCarbs">0%</div>
+                        </div>
                     </div>
                     <div class="total-item">
                         <span class="label">食物繊維</span>
                         <span class="value" id="totalFiber">0</span>
                         <span class="unit">g</span>
+                        <div style="font-size: 0.75em; opacity: 0.9; margin-top: 5px;">
+                            <div>基準: {{ standards.fiber }}</div>
+                            <div id="pctFiber">0%</div>
+                        </div>
                     </div>
                     <div class="total-item">
                         <span class="label">食塩相当量</span>
                         <span class="value" id="totalSalt">0</span>
                         <span class="unit">g</span>
+                        <div style="font-size: 0.75em; opacity: 0.9; margin-top: 5px;">
+                            <div>基準: {{ standards.salt }}</div>
+                            <div id="pctSalt">0%</div>
+                        </div>
                     </div>
                 </div>
 
@@ -767,6 +797,23 @@
                 $('#totalCarbs').text(totalCarbs.toFixed(2));
                 $('#totalFiber').text(totalFiber.toFixed(2));
                 $('#totalSalt').text(totalSalt.toFixed(2));
+
+                // Calculate Percentages
+                function updatePct(val, std, id) {
+                    if (std && std > 0) {
+                        const pct = (val / std * 100).toFixed(0);
+                        $('#' + id).text(pct + '%');
+                    } else {
+                        $('#' + id).text('-');
+                    }
+                }
+
+                updatePct(totalEnergy, STANDARDS.energy, 'pctEnergy');
+                updatePct(totalProtein, STANDARDS.protein, 'pctProtein');
+                updatePct(totalFat, STANDARDS.fat, 'pctFat');
+                updatePct(totalCarbs, STANDARDS.carbs, 'pctCarbs');
+                updatePct(totalFiber, STANDARDS.fiber, 'pctFiber');
+                updatePct(totalSalt, STANDARDS.salt, 'pctSalt');
             }
 
             function getCurrentTotals() {
