@@ -1,24 +1,27 @@
 services:
-  reverse-proxy:
-    image: nginx:1.27-alpine
-    ports:
-      - "8080:80"
-    volumes:
-      - ./infra/nginx/app.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on:
-      - app
-    networks: [ frontend ]
-    restart: unless-stopped
+  # reverse-proxy は削除 (DELETE)
 
   app:
     build:
       context: ./apps/web
     env_file: [ .env ]
+    environment:
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_HOST=db
     expose:
       - "8000"
     depends_on:
-      - db
-    networks: [ frontend, backend ]
+      db:
+        condition: service_healthy
+    networks:
+      backend:
+      shared-gateway-net:
+        # <--- 追加
+        aliases:
+          - recipe-app # <--- 重要: Gatewayはこの名前でアクセスします
+
     volumes:
       - ./apps/web/logs:/app/logs
     restart: unless-stopped
@@ -32,15 +35,23 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
       - db_data:/var/lib/mysql
+      - ./infra/mysql:/docker-entrypoint-initdb.d
     expose:
       - "3306"
     networks: [ backend ]
     restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      timeout: 20s
+      retries: 10
 
 volumes:
   db_data:
 
 
 networks:
-  frontend:
   backend:
+  frontend:
+  shared-gateway-net:
+    # <--- 追加
+    external: true # <--- 手順1で作ったものを使う

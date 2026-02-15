@@ -128,7 +128,7 @@
 <body>
     <h1>パーソナルレシピ検索</h1>
     <div class="search-form">
-        <form id="searchForm" action="/search" method="post">
+        <form id="searchForm" action="{{ url_for('personal.search') }}" method="post">
             <p class="search-note">
                 検索条件を追加して、詳細な検索ができます。<br>
                 「NOT」を選択すると、その単語を含まないレシピを検索します。

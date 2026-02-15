@@ -3,21 +3,35 @@ import sys
 import mysql.connector
 
 # --- データベース接続情報 ---
-# 設定ファイルを読み込む
-current_dir = os.path.dirname(os.path.abspath(__file__))
-# core/ から見て2つ上の階層 apps/web/ にあると想定するか、元の場所？
-# 元の場所は apps/web/db_connection.cofg
-# core/database.py -> apps/web/core/database.py
-# parent -> apps/web/core
-# parent.parent -> apps/web
-config_path = os.path.join(current_dir, '../DB_CONNECTION.cofg'.lower().replace('db_connection', 'db_connection')) 
-# Correctly: ../db_connection.cofg
-config_path = os.path.abspath(os.path.join(current_dir, '../db_connection.cofg'))
-config_vars = {}
-with open(config_path, 'r', encoding='utf-8') as f:
-    exec(f.read(), {}, config_vars)
+# --- データベース接続情報 ---
+# 環境変数から設定を読み込む (Docker対応)
+DB_CONFIG = {
+    'user': os.environ.get('MYSQL_USER'),
+    'password': os.environ.get('MYSQL_PASSWORD'),
+    'host': os.environ.get('MYSQL_HOST', 'db'),  # Docker service name 'db' as default
+    'database': os.environ.get('MYSQL_DATABASE'),
+}
 
-DB_CONFIG = config_vars['DB_CONFIG']
+# 環境変数が不足している場合、従来の設定ファイルにフォールバック
+if not all(DB_CONFIG.values()):
+    try:
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        # core/ の2つ上の階層 apps/web/ にある db_connection.cofg を探す
+        config_path = os.path.abspath(os.path.join(current_dir, '../../db_connection.cofg'))
+        
+        if os.path.exists(config_path):
+            config_vars = {}
+            with open(config_path, 'r', encoding='utf-8') as f:
+                exec(f.read(), {}, config_vars)
+            
+            # 設定ファイルの値で上書き (Noneのものだけ)
+            file_config = config_vars.get('DB_CONFIG', {})
+            for key in DB_CONFIG:
+                if not DB_CONFIG[key] and key in file_config:
+                    DB_CONFIG[key] = file_config[key]
+    except Exception as e:
+        print(f"警告: 設定ファイルの読み込みに失敗しました: {e}", file=sys.stderr)
+
 
 def get_db_connection():
     """データベースへの接続を確立する"""
