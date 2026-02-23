@@ -1,6 +1,4 @@
 services:
-  # reverse-proxy は削除 (DELETE)
-
   app:
     build:
       context: ./apps/web
@@ -18,12 +16,12 @@ services:
     networks:
       backend:
       shared-gateway-net:
-        # <--- 追加
         aliases:
-          - recipe-app # <--- 重要: Gatewayはこの名前でアクセスします
+          - recipe-app
 
     volumes:
       - ./apps/web/logs:/app/logs
+      - ./apps/web/data:/app/data
     restart: unless-stopped
 
   db:
@@ -53,5 +51,4 @@ networks:
   backend:
   frontend:
   shared-gateway-net:
-    # <--- 追加
-    external: true # <--- 手順1で作ったものを使う
+    external: true
