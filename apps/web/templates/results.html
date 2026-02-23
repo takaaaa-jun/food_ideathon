@@ -265,11 +265,11 @@
 
 <body>
     <h1>検索結果: "{{ query }}"</h1>
-    <p style="text-align: center;"><a href="/">← トップページに戻る</a></p>
+    <p style="text-align: center;"><a href="{{ url_for('personal.index') }}">← トップページに戻る</a></p>
 
     <!-- 検索フォーム (Hybrid) -->
     <div class="search-form">
-        <form id="searchForm" action="/search" method="post">
+        <form id="searchForm" action="{{ url_for('personal.search') }}" method="post">
             <input type="hidden" name="search_mode" value="{{ search_mode }}">
 
             <!-- 既存の検索条件（タグ） -->
@@ -298,7 +298,7 @@
 
     {% for recipe in recipes %}
     <div class="result-item">
-        <h2><a href="/recipe/{{ recipe.id }}">{{ recipe.title }}</a></h2>
+        <h2><a href="{{ url_for('personal.recipe_detail', recipe_id=recipe.id) }}">{{ recipe.title }}</a></h2>
 
         <div class="recipe-meta">
             <span>公開日: {{ recipe.published_at }}</span>

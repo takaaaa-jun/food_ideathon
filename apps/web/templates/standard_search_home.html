@@ -127,7 +127,7 @@
 
 <body>
     <h1>基準レシピ検索</h1>
-    <p style="text-align: center;"><a href="/">← トップページに戻る</a></p>
+    <p style="text-align: center;"><a href="{{ url_for('personal.index') }}">← トップページに戻る</a></p>
 
     <div class="search-form">
         <form id="searchForm" action="{{ url_for('standard.standard_search') }}" method="post">

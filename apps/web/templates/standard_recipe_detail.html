@@ -181,8 +181,9 @@
 
         <div class="tool-link">
             <p>このレシピの手順を作成・編集する:</p>
-            <a href="http://133.35.129.9:5174/recipe/{{ recipe.id }}" target="_blank">🛠 手順作成ツールへ移動 (ID: {{ recipe.id
-                }})</a>
+            <a href="#"
+                onclick="window.open('http://' + window.location.hostname + '/create-step-tool/recipe/{{ recipe.id }}', '_blank'); return false;">🛠
+                手順作成ツールへ移動 (ID: {{ recipe.id }})</a>
         </div>
 
         <!-- Reuse the exact grid layout and logic from standard_recipes.html -->
