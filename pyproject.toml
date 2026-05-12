@@ -31,6 +31,7 @@ preview = false
 python_version = "3.11"
 project_includes = [
     "src/**/*.py",
+    "apps/web/**/*.py",
     "tests/**/*.py",
     "*.py"
 ]
@@ -40,4 +41,11 @@ project_excludes = [
     "venv/**",
     "build/**",
     "dist/**",
+    ".vscode/**"
+]
+[dependency-groups]
+dev = [
+    "ruff",
+    "pyrefly",
+    "pre-commit",
 ]
