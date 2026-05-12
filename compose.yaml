@@ -1,4 +1,5 @@
 services:
+  # reverse-proxy は削除 (DELETE)
   app:
     build:
       context: ./apps/web
@@ -45,7 +46,6 @@ services:
 
 volumes:
   db_data:
-
 
 networks:
   backend:
