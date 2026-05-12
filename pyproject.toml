@@ -1,6 +1,17 @@
 [tool.ruff]
 line-length = 88
 target-version = "py311"
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "build",
+    "dist",
+    ".vscode",
+    "apps/web/logs",
+    "apps/web/data"
+]
 
 [tool.ruff.lint]
 select = [
@@ -14,6 +25,7 @@ select = [
     "C4",
     "PERF",
     "RUF",
+    "ANN",
 ]
 ignore = [
     "T201",   # print() を許可
@@ -41,7 +53,9 @@ project_excludes = [
     "venv/**",
     "build/**",
     "dist/**",
-    ".vscode/**"
+    ".vscode/**",
+    "apps/web/logs/**",
+    "apps/web/data/**"
 ]
 [dependency-groups]
 dev = [

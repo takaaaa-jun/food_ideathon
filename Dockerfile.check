@@ -1,0 +1,12 @@
+FROM python:3.11-slim
+
+WORKDIR /workspace
+
+COPY apps/web/requirements.txt /tmp/requirements.txt
+
+RUN pip install --no-cache-dir -r /tmp/requirements.txt \
+    && pip install --no-cache-dir ruff pyrefly
+
+COPY . .
+
+CMD ["sh", "-c", "ruff check . && ruff format --check . && pyrefly check --no-incremental"]
