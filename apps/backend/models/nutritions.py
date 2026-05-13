@@ -30,3 +30,13 @@ class Nutrition:
         self.fiber_value = fiber_value
         self.salt_name = salt_name
         self.salt_value = salt_value
+
+
+class NutritionName:
+    def __init__(
+        self,
+        nutrition_id: int,
+        name: str,
+    ) -> None:
+        self.nutrition_id = nutrition_id
+        self.name = name
