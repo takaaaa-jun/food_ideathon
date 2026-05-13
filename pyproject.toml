@@ -34,6 +34,9 @@ ignore = [
     "INP001", # __init__.py 不要
     "ERA001", # コメントアウトされたコードを許可
     "RET504", # 不要な変数経由returnを許可
+    "RUF001",
+    "RUF002",
+    "RUF003",
 ]
 
 [tool.ruff.format]

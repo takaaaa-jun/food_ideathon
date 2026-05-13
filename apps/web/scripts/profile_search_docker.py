@@ -2,7 +2,6 @@ import os
 import sys
 import time
 
-# No sys.path append needed as /app is PYTHONPATH in Docker if run from root, but we are in scripts now.
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.database import get_db_connection
@@ -36,8 +35,5 @@ def profile_search(query):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        query = sys.argv[1]
-    else:
-        query = "玉ねぎ"
+    query = sys.argv[1] if len(sys.argv) > 1 else "玉ねぎ"
     profile_search(query)

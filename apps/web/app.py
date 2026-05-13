@@ -60,8 +60,8 @@ def before_request():
 
 
 @app.context_processor
-def inject_user_id():
-    return dict(user_id=getattr(g, "user_id", "unknown"))
+def inject_user_id() -> dict[str, str]:
+    return {"user_id": getattr(g, "user_id", "unknown")}
 
 
 @app.after_request
@@ -87,8 +87,6 @@ def after_request(response):
         expires = datetime.datetime.now() + datetime.timedelta(days=365)
         response.set_cookie("user_id", g.user_id, expires=expires)
 
-    # 検索単語の収集 logic remains in app middleware as it intercepts ALL requests
-    # Or could be moved to individual routes, but keeping central logging here is fine for consistency.
     if request.path == "/search" and request.method == "POST":
         log_data["search_query"] = request.form.get("query")
         # インデックス/結果ページの検索は 'personal' とする

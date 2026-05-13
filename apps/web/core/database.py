@@ -82,7 +82,12 @@ def get_normalized_name(cursor, keyword):
     指定されたキーワードに対応する normalized_name を取得する
     """
     # 1. キーワードが既に normalized_name として存在するか確認
-    sql_check_norm = "SELECT normalized_name FROM synonym_dictionary WHERE normalized_name = %s LIMIT 1"
+    sql_check_norm = (
+        "SELECT normalized_name "
+        "FROM synonym_dictionary "
+        "WHERE normalized_name = %s "
+        "LIMIT 1"
+    )
     cursor.execute(sql_check_norm, (keyword,))
     if cursor.fetchone():
         return keyword
@@ -111,8 +116,8 @@ def unify_keywords(cursor, keywords):
     # 1. 各入力キーワードの normalized_name を取得
     placeholders = ", ".join(["%s"] * len(keywords))
     sql = f"""
-        SELECT synonym, normalized_name 
-        FROM synonym_dictionary 
+        SELECT synonym, normalized_name
+        FROM synonym_dictionary
         WHERE synonym IN ({placeholders})
     """
     cursor.execute(sql, keywords)
@@ -133,7 +138,7 @@ def unify_keywords(cursor, keywords):
         placeholders_norm = ", ".join(["%s"] * len(seen_norms))
         sql_best = f"""
             SELECT normalized_name, synonym, id
-            FROM synonym_dictionary 
+            FROM synonym_dictionary
             WHERE normalized_name IN ({placeholders_norm})
             ORDER BY id ASC
         """

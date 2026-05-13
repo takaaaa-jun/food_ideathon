@@ -66,8 +66,6 @@ def load_nutrition_data(data_dir):
     try:
         with open(csv_path, encoding="utf-8") as f:
             reader = csv.reader(f)
-            headers_jp = next(reader)
-            headers_en = next(reader)
 
             for row in reader:
                 if len(row) < 10:

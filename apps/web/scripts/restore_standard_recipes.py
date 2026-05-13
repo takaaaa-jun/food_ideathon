@@ -59,7 +59,8 @@ def restore_standard_recipes():
 
             # Prepare INSERT statement
             insert_sql = """
-            INSERT INTO standard_recipes (id, category_medium, recipe_count, cooking_time, average_steps, created_at)
+            INSERT INTO standard_recipes
+            (id, category_medium, recipe_count, cooking_time, average_steps, created_at)
             VALUES (%s, %s, %s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE
                 category_medium = VALUES(category_medium),

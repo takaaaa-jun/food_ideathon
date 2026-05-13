@@ -19,7 +19,6 @@ def search():
     """検索処理を行い、結果を表示する"""
     random.seed(os.urandom(16))
     search_query = request.form["query"]
-    search_mode = request.form.get("search_mode", "or")
 
     conn = None
     try:
