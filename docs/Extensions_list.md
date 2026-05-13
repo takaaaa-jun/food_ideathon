@@ -1,4 +1,7 @@
 # List of extensions
+
+## 機能ごとに分けた一覧
+
 ### Language
 - Japanese Language Pack for Visual Studio Code
 
