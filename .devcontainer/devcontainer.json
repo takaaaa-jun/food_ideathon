@@ -1,0 +1,34 @@
+{
+    "name": "Food Ideathon Dev",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": ".."
+    },
+    "workspaceFolder": "/workspace",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+    "postCreateCommand": "if [ -f apps/web/requirements.txt ]; then pip install -r apps/web/requirements.txt; fi",
+    "runArgs": [
+        "--network=food_ideathon_backend"
+    ],
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "charliermarsh.ruff",
+                "meta.pyrefly"
+            ],
+            "settings": {
+                "python.defaultInterpreterPath": "/usr/local/bin/python",
+                "[python]": {
+                    "editor.formatOnSave": true,
+                    "editor.defaultFormatter": "charliermarsh.ruff",
+                    "editor.codeActionsOnSave": {
+                        "source.fixAll.ruff": "always",
+                        "source.organizeImports.ruff": "always"
+                    }
+                },
+                "ruff.configuration": "${workspaceFolder}/pyproject.toml"
+            }
+        }
+    }
+}

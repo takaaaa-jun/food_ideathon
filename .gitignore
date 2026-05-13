@@ -2,6 +2,7 @@
 apps/web/db_connection.cofg
 .env
 .env.local
+.ruff_cache
 
 # Python 一時ファイル / 仮想環境
 __pycache__/

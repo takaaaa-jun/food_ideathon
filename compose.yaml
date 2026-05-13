@@ -68,7 +68,7 @@ services:
       - .:/workspace
     command: >
       sh -c "
-        ruff check . --fix &&
+        ruff check . --fix;
         ruff format .
       "
     profiles:
