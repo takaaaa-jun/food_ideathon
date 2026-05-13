@@ -42,10 +42,7 @@ preview = false
 [tool.pyrefly]
 python_version = "3.11"
 project_includes = [
-    "src/**/*.py",
-    "apps/web/**/*.py",
-    "tests/**/*.py",
-    "*.py"
+    "**/*.py",
 ]
 project_excludes = [
     "**/__pycache__/**",
