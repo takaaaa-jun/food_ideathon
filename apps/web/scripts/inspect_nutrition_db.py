@@ -5,7 +5,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.database import get_db_connection
 
 
-def inspect():
+def inspect() -> None:
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 

@@ -1,6 +1,7 @@
 import csv
 import logging
 import os
+from typing import Any
 
 # --- 主食（固定値）の設定 ---
 STAPLE_FOODS = [
@@ -51,11 +52,11 @@ STAPLE_FOODS = [
 ]
 
 
-def load_nutrition_data(data_dir):
+def load_nutrition_data(data_dir: str) -> list[dict[str, Any]]:
     csv_path = os.path.join(data_dir, "nutrition_ex.csv")
     ingredients = []
 
-    def safe_float(val):
+    def safe_float(val: object) -> float:
         if not val or val == "-" or val == "\\N":
             return 0.0
         try:

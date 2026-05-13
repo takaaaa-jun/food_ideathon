@@ -1,6 +1,7 @@
 import csv
 import os
 import sys
+from typing import Any
 
 import mysql.connector
 
@@ -12,7 +13,7 @@ except ImportError:
     # Fallback if running directly without app context
     print("Could not import get_db_connection, using simplified connection")
 
-    def get_db_connection():
+    def get_db_connection() -> Any:
         return mysql.connector.connect(
             host=os.environ.get("MYSQL_HOST", "db"),
             user=os.environ.get("MYSQL_USER", "deliciousdx"),
@@ -21,7 +22,7 @@ except ImportError:
         )
 
 
-def restore_standard_recipes():
+def restore_standard_recipes() -> None:
     print("Starting restoration of standard_recipes...")
 
     csv_path = os.path.join(os.path.dirname(__file__), "../standard_recipes.csv")

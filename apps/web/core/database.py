@@ -1,5 +1,6 @@
 import os
 import sys
+from typing import Any
 
 import mysql.connector
 
@@ -36,7 +37,7 @@ if not all(DB_CONFIG.values()):
         print(f"警告: 設定ファイルの読み込みに失敗しました: {e}", file=sys.stderr)
 
 
-def get_db_connection():
+def get_db_connection() -> Any:
     """データベースへの接続を確立する"""
     try:
         conn = mysql.connector.connect(**DB_CONFIG)
@@ -46,7 +47,7 @@ def get_db_connection():
         return None
 
 
-def get_synonyms(cursor, keyword):
+def get_synonyms(cursor: Any, keyword: str) -> list[str]:
     """
     指定されたキーワードの同義語を取得する
     """
@@ -77,7 +78,7 @@ def get_synonyms(cursor, keyword):
     return list(synonyms)
 
 
-def get_normalized_name(cursor, keyword):
+def get_normalized_name(cursor: Any, keyword: str) -> str | None:
     """
     指定されたキーワードに対応する normalized_name を取得する
     """
@@ -104,7 +105,7 @@ def get_normalized_name(cursor, keyword):
     return None
 
 
-def unify_keywords(cursor, keywords):
+def unify_keywords(cursor: Any, keywords: list[str]) -> list[str]:
     """
     キーワードリスト内の同義語を統合する。
     同じ normalized_name を持つキーワードが複数ある場合、

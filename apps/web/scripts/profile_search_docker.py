@@ -8,7 +8,7 @@ from core.database import get_db_connection
 from services.search import search_recipes
 
 
-def profile_search(query):
+def profile_search(query: str) -> None:
     print(f"Profiling search for: '{query}'")
     conn = get_db_connection()
     if not conn:

@@ -1,6 +1,7 @@
 import os
 import random
 import sys
+from typing import Any
 
 import mysql.connector
 
@@ -13,7 +14,7 @@ with open(config_path, encoding="utf-8") as f:
 DB_CONFIG = config_vars["DB_CONFIG"]
 
 
-def get_db_connection():
+def get_db_connection() -> Any:
     try:
         conn = mysql.connector.connect(**DB_CONFIG)
         return conn
@@ -23,7 +24,7 @@ def get_db_connection():
 
 
 # --- Helper Functions (Copied from app.py) ---
-def get_synonyms(cursor, keyword):
+def get_synonyms(cursor: Any, keyword: str) -> list[str]:
     synonyms = {keyword}
     sql_get_synonyms = (
         "SELECT synonym FROM synonym_dictionary WHERE normalized_name = %s"
@@ -47,7 +48,7 @@ def get_synonyms(cursor, keyword):
     return list(synonyms)
 
 
-def unify_keywords(cursor, keywords):
+def unify_keywords(cursor: Any, keywords: list[str]) -> list[str]:
     if not keywords:
         return []
 
@@ -99,13 +100,14 @@ def unify_keywords(cursor, keywords):
 
     return unified_keywords
 
+
 # ... (Previous imports and config) ...
 
 # ... (Helper functions: get_db_connection, get_synonyms, unify_keywords) ...
 
 
 # --- Verification Logic ---
-def verify_search(search_query):
+def verify_search(search_query: str) -> None:
     print(f"\n=== Verifying Search for: '{search_query}' ===")
 
     conn = get_db_connection()
@@ -232,8 +234,8 @@ def verify_search(search_query):
         for row in final_results:
             print(
                 f"""
-                - ID: {row['recipe_id']}, Title: {row['title']},
-                Attribute: {row['attribute']}
+                - ID: {row["recipe_id"]}, Title: {row["title"]},
+                Attribute: {row["attribute"]}
                 """
             )
 

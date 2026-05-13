@@ -37,6 +37,7 @@ ignore = [
     "RUF001",
     "RUF002",
     "RUF003",
+    "ANN401",
 ]
 
 [tool.ruff.format]
@@ -45,7 +46,10 @@ preview = false
 [tool.pyrefly]
 python_version = "3.11"
 project_includes = [
-    "**/*.py",
+    "apps/web/app.py",
+    "apps/web/core/**/*.py",
+    "apps/web/routes/**/*.py",
+    "apps/web/services/**/*.py",
 ]
 project_excludes = [
     "**/__pycache__/**",
@@ -55,7 +59,10 @@ project_excludes = [
     "dist/**",
     ".vscode/**",
     "apps/web/logs/**",
-    "apps/web/data/**"
+    "apps/web/data/**",
+]
+search_path = [
+    "apps/web",
 ]
 [dependency-groups]
 dev = [

@@ -1,8 +1,10 @@
+from typing import Any
+
 from core.database import get_synonyms, unify_keywords
 from core.utils import build_recipes_dict, process_recipe_rows
 
 
-def _parse_query(cursor, search_query):
+def _parse_query(cursor: Any, search_query: str) -> list[list[str]]:
     normalized_query = search_query.replace("　", " ")
     keywords = normalized_query.split()
 
@@ -25,7 +27,9 @@ def _parse_query(cursor, search_query):
     return inclusions
 
 
-def search_recipes(cursor, search_query, start_id=1, limit=10):
+def search_recipes(
+    cursor: Any, search_query: str, start_id: int = 1, limit: int = 10
+) -> tuple[list[tuple[str, dict[str, Any]]], int | None]:
     """
     一般レシピの検索処理 (Ingredient Search with Cursor Pagination)
     Returns: list of dicts
@@ -96,7 +100,10 @@ def search_recipes(cursor, search_query, start_id=1, limit=10):
             other_groups = [item["group"] for item in sorted_inclusions[1:]]
 
             # Helper: Verify batch
-            def verify_batch(candidate_ids, group_synonyms):
+            def verify_batch(
+                candidate_ids: list[int] | set[int],
+                group_synonyms: list[str] | set[str],
+            ) -> set[int]:
                 if not candidate_ids:
                     return set()
                 placeholders_ids = ", ".join(["%s"] * len(candidate_ids))
@@ -172,7 +179,7 @@ def search_recipes(cursor, search_query, start_id=1, limit=10):
     return candidate_recipes
 
 
-def get_recipe_details(cursor, recipe_id):
+def get_recipe_details(cursor: Any, recipe_id: int) -> dict[str, Any] | None:
     """
     特定レシピの詳細情報を取得する
     """
@@ -221,7 +228,11 @@ def get_recipe_details(cursor, recipe_id):
     return None
 
 
-def search_standard_recipes(cursor, search_query, search_mode="recipe"):
+def search_standard_recipes(
+    cursor: Any,
+    search_query: str,
+    search_mode: str = "recipe",
+) -> list[tuple[str, dict[str, Any]]]:
     """
     基礎レシピの検索処理 (Optimized)
     """
@@ -359,7 +370,7 @@ def search_standard_recipes(cursor, search_query, search_mode="recipe"):
         # Optimize: Sort by popularity (recipe_count) and LIMIT 5
         sql = f"""
         SELECT id FROM standard_recipes
-        WHERE {' AND '.join(conditions)}
+        WHERE {" AND ".join(conditions)}
         ORDER BY recipe_count DESC LIMIT 5
         """
         cursor.execute(sql, params)
@@ -455,7 +466,7 @@ def search_standard_recipes(cursor, search_query, search_mode="recipe"):
     return final_recipes_list
 
 
-def get_standard_recipe_details(cursor, recipe_id):
+def get_standard_recipe_details(cursor: Any, recipe_id: int) -> dict[str, Any] | None:
     """
     基準レシピの詳細情報を取得する
     """

@@ -54,7 +54,7 @@ services:
       sh -c "
         ruff check . &&
         ruff format --check . &&
-        pyrefly check --no-incremental
+        pyrefly check
       "
     profiles:
       - check

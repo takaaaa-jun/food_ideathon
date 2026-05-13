@@ -4,7 +4,7 @@ import mysql.connector
 from core.database import get_db_connection
 
 
-def add_index():
+def add_index() -> None:
     conn = get_db_connection()
     cursor = conn.cursor()
 

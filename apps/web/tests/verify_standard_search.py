@@ -1,5 +1,6 @@
 import os
 import sys
+from typing import Any
 
 import mysql.connector
 
@@ -12,7 +13,7 @@ with open(config_path, encoding="utf-8") as f:
 DB_CONFIG = config_vars["DB_CONFIG"]
 
 
-def get_db_connection():
+def get_db_connection() -> Any:
     try:
         conn = mysql.connector.connect(**DB_CONFIG)
         return conn
@@ -21,7 +22,7 @@ def get_db_connection():
         return None
 
 
-def get_normalized_name(cursor, keyword):
+def get_normalized_name(cursor: Any, keyword: str) -> str | None:
     # 1. Check if keyword is already a normalized_name
     sql_check_norm = """
     SELECT normalized_name FROM synonym_dictionary
@@ -43,7 +44,7 @@ def get_normalized_name(cursor, keyword):
     return None
 
 
-def verify_standard_search(search_query, search_mode="ingredient"):
+def verify_standard_search(search_query: str, search_mode: str = "ingredient") -> None:
     print(f"\n=== Verifying Standard Search ({search_mode}) for: '{search_query}' ===")
 
     conn = get_db_connection()

@@ -8,7 +8,7 @@ from core.database import get_db_connection
 from services.search import search_recipes
 
 
-def profile_slow_case():
+def profile_slow_case() -> None:
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 

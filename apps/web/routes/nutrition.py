@@ -17,7 +17,7 @@ STANDARDS = {
 
 
 @nutrition_bp.route("/nutrition_calculation")
-def nutrition_calculation():
+def nutrition_calculation() -> str:
     """栄養計算ページを表示する"""
     # Assuming app.py is in apps/web, root_path is apps/web.
     data_dir = os.path.join(current_app.root_path, "data")

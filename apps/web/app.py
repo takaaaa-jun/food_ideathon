@@ -9,7 +9,7 @@ import psutil
 
 # Import Core
 from core.utils import jst_converter
-from flask import Flask, g, request
+from flask import Flask, Response, g, request
 from routes.api import api_bp
 from routes.nutrition import nutrition_bp
 
@@ -45,7 +45,7 @@ app.register_blueprint(api_bp)
 
 
 @app.before_request
-def before_request():
+def before_request() -> None:
     g.start_time = time.time()
 
     # CookieからユーザーIDを取得、なければ新規生成
@@ -65,7 +65,7 @@ def inject_user_id() -> dict[str, str]:
 
 
 @app.after_request
-def after_request(response):
+def after_request(response: Response) -> Response:
     if request.path.startswith("/static"):
         return response
 

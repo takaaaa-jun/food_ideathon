@@ -1,8 +1,9 @@
 import datetime
+from typing import Any
 
 
 # --- ログ設定ヘルパー ---
-def jst_converter(*args):
+def jst_converter(*args: object) -> datetime.struct_time:
     """ログの時刻をJSTにする"""
     return datetime.datetime.now(
         datetime.timezone(datetime.timedelta(hours=9))
@@ -29,7 +30,9 @@ STANDARDS = {
 }
 
 
-def process_recipe_rows(recipes_dict):
+def process_recipe_rows(
+    recipes_dict: dict[int, dict[str, Any]],
+) -> list[dict[str, Any]]:
     """
     DBから取得したレシピ情報の辞書を、表示用のリスト形式に変換・計算する
     """
@@ -76,7 +79,7 @@ def process_recipe_rows(recipes_dict):
     return recipes_list
 
 
-def build_recipes_dict(all_rows):
+def build_recipes_dict(all_rows: list[dict[str, Any]]) -> dict[int, dict[str, Any]]:
     """
     DBの検索結果行（JOINされた情報）から、レシピIDをキーとする辞書を構築する
     """

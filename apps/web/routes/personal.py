@@ -1,5 +1,6 @@
 import os
 import random
+from typing import Any
 
 from core.database import get_db_connection
 from flask import Blueprint, current_app, render_template, request
@@ -9,13 +10,13 @@ personal_bp = Blueprint("personal", __name__)
 
 
 @personal_bp.route("/")
-def index():
+def index() -> str:
     """トップページを表示する"""
     return render_template("index.html")
 
 
 @personal_bp.route("/search", methods=["POST"])
-def search():
+def search() -> str:
     """検索処理を行い、結果を表示する"""
     random.seed(os.urandom(16))
     search_query = request.form["query"]
@@ -67,7 +68,7 @@ def search():
 
 
 @personal_bp.route("/recipe/<int:recipe_id>")
-def recipe_detail(recipe_id):
+def recipe_detail(recipe_id: int) -> Any:
     """レシピ詳細を表示する"""
     conn = None
     try:
@@ -88,7 +89,7 @@ def recipe_detail(recipe_id):
 
 
 @personal_bp.route("/search_supplement", methods=["GET"])
-def search_supplement():
+def search_supplement() -> str:
     return render_template(
         "results.html", error="現在、不足分の栄養検索機能は停止しています。"
     )
