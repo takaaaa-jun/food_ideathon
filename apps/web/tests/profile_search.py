@@ -1,15 +1,15 @@
-import sys
 import os
+import sys
 import time
-import mysql.connector
 
 # Add project root to path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 from apps.web.core.database import get_db_connection
 from apps.web.services.search import search_recipes
 
-def profile_search(query):
+
+def profile_search(query: str) -> None:
     print(f"Profiling search for: '{query}'")
     conn = get_db_connection()
     if not conn:
@@ -17,7 +17,7 @@ def profile_search(query):
         return
 
     cursor = conn.cursor(dictionary=True)
-    
+
     start_time = time.time()
     try:
         # Measure internal steps if possible, but for now measure total time
@@ -28,16 +28,14 @@ def profile_search(query):
     finally:
         cursor.close()
         conn.close()
-        
+
     end_time = time.time()
     duration = end_time - start_time
     print(f"Search completed in {duration:.4f} seconds.")
     print(f"Total count: {count}")
     print(f"Results returned: {len(recipes)}")
 
-if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        query = sys.argv[1]
-    else:
-        query = "玉ねぎ"
+
+if __name__ == "__main__":
+    query = sys.argv[1] if len(sys.argv) > 1 else "玉ねぎ"
     profile_search(query)

@@ -1,9 +1,9 @@
-
+import csv
 import os
 import sys
-import csv
+from typing import Any
+
 import mysql.connector
-from datetime import datetime
 
 # Add parent directory to path to import core modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -12,18 +12,20 @@ try:
 except ImportError:
     # Fallback if running directly without app context
     print("Could not import get_db_connection, using simplified connection")
-    def get_db_connection():
+
+    def get_db_connection() -> Any:
         return mysql.connector.connect(
-            host=os.environ.get('MYSQL_HOST', 'db'),
-            user=os.environ.get('MYSQL_USER', 'deliciousdx'),
-            password=os.environ.get('MYSQL_PASSWORD', 'deliciousdx'),
-            database=os.environ.get('MYSQL_DATABASE', 'database_food_ideathon')
+            host=os.environ.get("MYSQL_HOST", "db"),
+            user=os.environ.get("MYSQL_USER", "deliciousdx"),
+            password=os.environ.get("MYSQL_PASSWORD", "deliciousdx"),
+            database=os.environ.get("MYSQL_DATABASE", "database_food_ideathon"),
         )
 
-def restore_standard_recipes():
+
+def restore_standard_recipes() -> None:
     print("Starting restoration of standard_recipes...")
-    
-    csv_path = os.path.join(os.path.dirname(__file__), '../standard_recipes.csv')
+
+    csv_path = os.path.join(os.path.dirname(__file__), "../standard_recipes.csv")
     if not os.path.exists(csv_path):
         print(f"Error: CSV file not found at {csv_path}")
         return
@@ -52,13 +54,14 @@ def restore_standard_recipes():
     # 2. Read CSV and Insert
     print(f"Reading CSV from {csv_path}...")
     try:
-        with open(csv_path, 'r', encoding='utf-8-sig') as f:
+        with open(csv_path, encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
             print(f"CSV Headers: {reader.fieldnames}")
-            
+
             # Prepare INSERT statement
             insert_sql = """
-            INSERT INTO standard_recipes (id, category_medium, recipe_count, cooking_time, average_steps, created_at)
+            INSERT INTO standard_recipes
+            (id, category_medium, recipe_count, cooking_time, average_steps, created_at)
             VALUES (%s, %s, %s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE
                 category_medium = VALUES(category_medium),
@@ -67,23 +70,25 @@ def restore_standard_recipes():
                 average_steps = VALUES(average_steps),
                 created_at = VALUES(created_at)
             """
-            
+
             rows_to_insert = []
             for row in reader:
                 # Handle cooking_time potentially being empty or invalid
-                cooking_time = row['cooking_time']
+                cooking_time = row["cooking_time"]
                 if not cooking_time or not cooking_time.isdigit():
                     cooking_time = 0
-                
-                rows_to_insert.append((
-                    row['id'],
-                    row['category_medium'],
-                    row['recipe_count'],
-                    int(cooking_time),
-                    row['average_steps'],
-                    row['created_at']
-                ))
-            
+
+                rows_to_insert.append(
+                    (
+                        row["id"],
+                        row["category_medium"],
+                        row["recipe_count"],
+                        int(cooking_time),
+                        row["average_steps"],
+                        row["created_at"],
+                    )
+                )
+
             if rows_to_insert:
                 print(f"Inserting {len(rows_to_insert)} records...")
                 cursor.executemany(insert_sql, rows_to_insert)
@@ -98,6 +103,7 @@ def restore_standard_recipes():
     finally:
         cursor.close()
         conn.close()
+
 
 if __name__ == "__main__":
     restore_standard_recipes()

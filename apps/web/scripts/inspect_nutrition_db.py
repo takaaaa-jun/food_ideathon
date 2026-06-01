@@ -1,13 +1,14 @@
-
-import sys
 import os
+import sys
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.database import get_db_connection
 
-def inspect():
+
+def inspect() -> None:
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    
+
     print("--- nutritions columns ---")
     cursor.execute("DESCRIBE nutritions")
     for row in cursor.fetchall():
@@ -19,6 +20,7 @@ def inspect():
         print(f"{row['Field']} ({row['Type']})")
 
     conn.close()
+
 
 if __name__ == "__main__":
     inspect()

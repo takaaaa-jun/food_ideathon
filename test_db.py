@@ -1,11 +1,10 @@
 import mysql.connector
-import sys
 
 config = {
-    'user': 'deliciousdx',
-    'password': 'deliciousdx',
-    'host': '172.17.0.1',
-    'database': 'database_food_ideathon'
+    "user": "deliciousdx",
+    "password": "deliciousdx",
+    "host": "172.17.0.1",
+    "database": "database_food_ideathon",
 }
 
 try:
