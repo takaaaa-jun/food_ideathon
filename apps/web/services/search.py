@@ -1,7 +1,12 @@
-from typing import Any
+from typing import Any, TypedDict
 
 from core.database import get_synonyms, unify_keywords
 from core.utils import build_recipes_dict, process_recipe_rows
+
+
+class InclusionStat(TypedDict):
+    group: list[str]
+    count: int
 
 
 def _parse_query(cursor: Any, search_query: str) -> list[list[str]]:
@@ -29,7 +34,7 @@ def _parse_query(cursor: Any, search_query: str) -> list[list[str]]:
 
 def search_recipes(
     cursor: Any, search_query: str, start_id: int = 1, limit: int = 10
-) -> tuple[list[tuple[str, dict[str, Any]]], int | None]:
+) -> tuple[list[dict[str, Any]], int | None]:
     """
     一般レシピの検索処理 (Ingredient Search with Cursor Pagination)
     Returns: list of dicts
@@ -81,7 +86,7 @@ def search_recipes(
             # Unified Paged Strategy (Paged Driver + Vectorized Verification)
 
             # 1. Rarest First Selection
-            sorted_inclusions = []
+            sorted_inclusions: list[InclusionStat] = []
             for group in inclusions:
                 total_est = 0
                 for syn in group:
@@ -114,7 +119,7 @@ def search_recipes(
                     WHERE name IN ({placeholders_names})
                     AND recipe_id IN ({placeholders_ids})
                 """
-                params = group_synonyms + candidate_ids
+                params = list(group_synonyms) + list(candidate_ids)
                 cursor.execute(sql, params)
                 return {row["recipe_id"] for row in cursor.fetchall()}
 
@@ -164,7 +169,7 @@ def search_recipes(
                 current_start_id = last_candidate_id + 1
 
         if not found_ids:
-            return []
+            return [], None
 
         placeholders_ids = ", ".join(["%s"] * len(found_ids))
         sql_details = f"""
@@ -176,7 +181,7 @@ def search_recipes(
         cursor.execute(sql_details, found_ids + found_ids)
         candidate_recipes = cursor.fetchall()
 
-    return candidate_recipes
+    return candidate_recipes, None
 
 
 def get_recipe_details(cursor: Any, recipe_id: int) -> dict[str, Any] | None:
@@ -387,7 +392,7 @@ def search_standard_recipes(
     cursor.execute(sql_std, target_ids)
     recipes_rows = cursor.fetchall()
 
-    recipes_data = {}
+    recipes_data: dict[int, dict[str, Any]] = {}
     for row in recipes_rows:
         recipes_data[row["id"]] = {
             "id": row["id"],
@@ -423,7 +428,6 @@ def search_standard_recipes(
             if name not in recipes_data[r_id]["ingredient"][group]:
                 recipes_data[r_id]["ingredient"][group][name] = [0]
 
-            recipes_data[r_id]["ingredient"][group][name][0] = count
             recipes_data[r_id]["ingredient"][group][name][0] = count
             recipes_data[r_id]["ingredient"][group]["all"][0] += count
 

@@ -34,20 +34,17 @@ def search() -> str:
 
         cursor = conn.cursor(dictionary=True)
 
-        # Random Start ID (1 to 1,500,000)
         rand_id = random.randint(1, 1500000)
 
-        # Search 1: From rand_id
-        recipes_list_1 = search_recipes(
+        recipes_list_1, _ = search_recipes(
             cursor, search_query, start_id=rand_id, limit=10
         )
 
-        recipes_list = recipes_list_1
+        recipes_list = list(recipes_list_1)
 
-        # Wrap-around if needed
         if len(recipes_list) < 10:
             needed = 10 - len(recipes_list)
-            recipes_list_2 = search_recipes(
+            recipes_list_2, _ = search_recipes(
                 cursor, search_query, start_id=1, limit=needed
             )
             recipes_list.extend(recipes_list_2)

@@ -93,11 +93,17 @@ def build_recipes_dict(all_rows: list[dict[str, Any]]) -> dict[int, dict[str, An
             if serving_size == 0:
                 serving_size = 1
 
+            cooking_time = (
+                COOKING_TIME_MAP.get(cooking_time_id)
+                if isinstance(cooking_time_id, int)
+                else None
+            )
+
             recipes_dict[recipe_id] = {
                 "id": row["id"],
                 "title": row["title"],
                 "description": row["description"],
-                "cooking_time": COOKING_TIME_MAP.get(cooking_time_id),
+                "cooking_time": cooking_time,
                 "serving_for": row.get("serving_for"),
                 "serving_size": serving_size,
                 "ingredients": {},

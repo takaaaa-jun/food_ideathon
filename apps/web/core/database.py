@@ -1,6 +1,6 @@
 import os
 import sys
-from typing import Any
+from typing import Any, cast
 
 import mysql.connector
 
@@ -29,7 +29,7 @@ if not all(DB_CONFIG.values()):
                 exec(f.read(), {}, config_vars)
 
             # 設定ファイルの値で上書き (Noneのものだけ)
-            file_config = config_vars.get("DB_CONFIG", {})
+            file_config = cast(dict[str, str], config_vars.get("DB_CONFIG", {}))
             for key in DB_CONFIG:
                 if not DB_CONFIG[key] and key in file_config:
                     DB_CONFIG[key] = file_config[key]
