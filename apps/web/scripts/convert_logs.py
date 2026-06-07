@@ -2,6 +2,7 @@ import csv
 import json
 import os
 import re
+from typing import Any
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_FILE = os.path.join(BASE_DIR, "../logs", "app.log")
@@ -9,7 +10,7 @@ ACCESS_CSV = os.path.join(BASE_DIR, "../logs", "access_log.csv")
 ACTION_CSV = os.path.join(BASE_DIR, "../logs", "action_log.csv")
 
 
-def parse_log_line(line):
+def parse_log_line(line: str) -> dict[str, Any] | None:
     # Log format: YYYY-MM-DD HH:MM:SS,mmm - LEVEL - TYPE: {json}
     # Example: 2025-12-08 10:21:14,764 - INFO - ACCESS_LOG: {...}
 
@@ -32,7 +33,7 @@ def parse_log_line(line):
         return None
 
 
-def main():
+def main() -> None:
     if not os.path.exists(LOG_FILE):
         print(f"Log file not found: {LOG_FILE}")
         return

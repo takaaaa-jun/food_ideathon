@@ -1,5 +1,6 @@
 import os
 import sys
+from typing import Any
 
 import mysql.connector
 
@@ -12,7 +13,7 @@ with open(config_path, encoding="utf-8") as f:
 DB_CONFIG = config_vars["DB_CONFIG"]
 
 
-def get_db_connection():
+def get_db_connection() -> Any:
     try:
         conn = mysql.connector.connect(**DB_CONFIG)
         return conn
@@ -21,9 +22,12 @@ def get_db_connection():
         return None
 
 
-def get_normalized_name(cursor, keyword):
+def get_normalized_name(cursor: Any, keyword: str) -> str | None:
     # 1. Check if keyword is already a normalized_name
-    sql_check_norm = "SELECT normalized_name FROM synonym_dictionary WHERE normalized_name = %s LIMIT 1"
+    sql_check_norm = """
+    SELECT normalized_name FROM synonym_dictionary
+    WHERE normalized_name = %s LIMIT 1
+    """
     cursor.execute(sql_check_norm, (keyword,))
     if cursor.fetchone():
         return keyword
@@ -40,7 +44,7 @@ def get_normalized_name(cursor, keyword):
     return None
 
 
-def verify_standard_search(search_query, search_mode="ingredient"):
+def verify_standard_search(search_query: str, search_mode: str = "ingredient") -> None:
     print(f"\n=== Verifying Standard Search ({search_mode}) for: '{search_query}' ===")
 
     conn = get_db_connection()
@@ -74,12 +78,20 @@ def verify_standard_search(search_query, search_mode="ingredient"):
 
                 if normalized_name:
                     cursor.execute(
-                        "SELECT DISTINCT standard_recipe_id FROM standard_recipe_ingredients WHERE ingredient_name = %s",
+                        """
+                        SELECT DISTINCT standard_recipe_id
+                        FROM standard_recipe_ingredients
+                        WHERE ingredient_name = %s
+                        """,
                         (normalized_name,),
                     )
                 else:
                     cursor.execute(
-                        "SELECT DISTINCT standard_recipe_id FROM standard_recipe_ingredients WHERE ingredient_name LIKE %s",
+                        """
+                        SELECT DISTINCT standard_recipe_id
+                        FROM standard_recipe_ingredients
+                        WHERE ingredient_name LIKE %s
+                        """,
                         (f"%{keyword}%",),
                     )
 
@@ -110,12 +122,20 @@ def verify_standard_search(search_query, search_mode="ingredient"):
 
                 if normalized_name:
                     cursor.execute(
-                        "SELECT DISTINCT standard_recipe_id FROM standard_recipe_ingredients WHERE ingredient_name = %s",
+                        """
+                        SELECT DISTINCT standard_recipe_id
+                        FROM standard_recipe_ingredients
+                        WHERE ingredient_name = %s
+                        """,
                         (normalized_name,),
                     )
                 else:
                     cursor.execute(
-                        "SELECT DISTINCT standard_recipe_id FROM standard_recipe_ingredients WHERE ingredient_name LIKE %s",
+                        """
+                        SELECT DISTINCT standard_recipe_id
+                        FROM standard_recipe_ingredients
+                        WHERE ingredient_name LIKE %s
+                        """,
                         (f"%{keyword}%",),
                     )
 
@@ -153,7 +173,11 @@ def verify_standard_search(search_query, search_mode="ingredient"):
         # Get names for first 5
         placeholders = ",".join(["%s"] * len(recipe_ids[:5]))
         cursor.execute(
-            f"SELECT id, category_medium FROM standard_recipes WHERE id IN ({placeholders})",
+            f"""
+            SELECT id, category_medium
+            FROM standard_recipes
+            WHERE id IN ({placeholders})
+            """,
             recipe_ids[:5],
         )
         for row in cursor.fetchall():

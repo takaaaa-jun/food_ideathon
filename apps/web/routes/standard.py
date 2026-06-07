@@ -1,3 +1,5 @@
+from typing import Any
+
 from core.database import get_db_connection
 from core.utils import COOKING_TIME_MAP
 from flask import Blueprint, current_app, render_template, request
@@ -7,13 +9,13 @@ standard_bp = Blueprint("standard", __name__)
 
 
 @standard_bp.route("/standard_search_home")
-def standard_search_home():
+def standard_search_home() -> str:
     """基礎レシピの検索ページを表示する"""
     return render_template("standard_search_home.html")
 
 
 @standard_bp.route("/standard_search", methods=["POST"])
-def standard_search():
+def standard_search() -> str:
     """基礎レシピを検索し、結果を表示する"""
     search_query = request.form["query"]
     search_mode = request.form.get("search_mode", "recipe")
@@ -58,7 +60,7 @@ def standard_search():
 
 
 @standard_bp.route("/standard_recipe/<int:recipe_id>")
-def standard_recipe_detail(recipe_id):
+def standard_recipe_detail(recipe_id: int) -> Any:
     """基準レシピ詳細を表示する"""
     conn = None
     try:

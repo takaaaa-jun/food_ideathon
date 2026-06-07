@@ -1,5 +1,6 @@
 import os
 import sys
+from typing import Any, cast
 
 import mysql.connector
 
@@ -28,7 +29,7 @@ if not all(DB_CONFIG.values()):
                 exec(f.read(), {}, config_vars)
 
             # 設定ファイルの値で上書き (Noneのものだけ)
-            file_config = config_vars.get("DB_CONFIG", {})
+            file_config = cast(dict[str, str], config_vars.get("DB_CONFIG", {}))
             for key in DB_CONFIG:
                 if not DB_CONFIG[key] and key in file_config:
                     DB_CONFIG[key] = file_config[key]
@@ -36,7 +37,7 @@ if not all(DB_CONFIG.values()):
         print(f"警告: 設定ファイルの読み込みに失敗しました: {e}", file=sys.stderr)
 
 
-def get_db_connection():
+def get_db_connection() -> Any:
     """データベースへの接続を確立する"""
     try:
         conn = mysql.connector.connect(**DB_CONFIG)
@@ -46,7 +47,7 @@ def get_db_connection():
         return None
 
 
-def get_synonyms(cursor, keyword):
+def get_synonyms(cursor: Any, keyword: str) -> list[str]:
     """
     指定されたキーワードの同義語を取得する
     """
@@ -77,12 +78,17 @@ def get_synonyms(cursor, keyword):
     return list(synonyms)
 
 
-def get_normalized_name(cursor, keyword):
+def get_normalized_name(cursor: Any, keyword: str) -> str | None:
     """
     指定されたキーワードに対応する normalized_name を取得する
     """
     # 1. キーワードが既に normalized_name として存在するか確認
-    sql_check_norm = "SELECT normalized_name FROM synonym_dictionary WHERE normalized_name = %s LIMIT 1"
+    sql_check_norm = (
+        "SELECT normalized_name "
+        "FROM synonym_dictionary "
+        "WHERE normalized_name = %s "
+        "LIMIT 1"
+    )
     cursor.execute(sql_check_norm, (keyword,))
     if cursor.fetchone():
         return keyword
@@ -99,7 +105,7 @@ def get_normalized_name(cursor, keyword):
     return None
 
 
-def unify_keywords(cursor, keywords):
+def unify_keywords(cursor: Any, keywords: list[str]) -> list[str]:
     """
     キーワードリスト内の同義語を統合する。
     同じ normalized_name を持つキーワードが複数ある場合、
@@ -111,8 +117,8 @@ def unify_keywords(cursor, keywords):
     # 1. 各入力キーワードの normalized_name を取得
     placeholders = ", ".join(["%s"] * len(keywords))
     sql = f"""
-        SELECT synonym, normalized_name 
-        FROM synonym_dictionary 
+        SELECT synonym, normalized_name
+        FROM synonym_dictionary
         WHERE synonym IN ({placeholders})
     """
     cursor.execute(sql, keywords)
@@ -133,7 +139,7 @@ def unify_keywords(cursor, keywords):
         placeholders_norm = ", ".join(["%s"] * len(seen_norms))
         sql_best = f"""
             SELECT normalized_name, synonym, id
-            FROM synonym_dictionary 
+            FROM synonym_dictionary
             WHERE normalized_name IN ({placeholders_norm})
             ORDER BY id ASC
         """

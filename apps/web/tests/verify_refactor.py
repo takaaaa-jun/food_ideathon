@@ -2,7 +2,7 @@ from apps.web.core.database import get_db_connection
 from apps.web.services.search import search_recipes, search_standard_recipes
 
 
-def test_search():
+def test_search() -> None:
     print("Testing DB Connection...")
     conn = get_db_connection()
     if not conn:

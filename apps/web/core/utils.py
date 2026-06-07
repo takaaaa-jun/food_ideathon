@@ -1,8 +1,9 @@
 import datetime
+from typing import Any
 
 
 # --- ログ設定ヘルパー ---
-def jst_converter(*args):
+def jst_converter(*args: object) -> datetime.struct_time:
     """ログの時刻をJSTにする"""
     return datetime.datetime.now(
         datetime.timezone(datetime.timedelta(hours=9))
@@ -29,7 +30,9 @@ STANDARDS = {
 }
 
 
-def process_recipe_rows(recipes_dict):
+def process_recipe_rows(
+    recipes_dict: dict[int, dict[str, Any]],
+) -> list[dict[str, Any]]:
     """
     DBから取得したレシピ情報の辞書を、表示用のリスト形式に変換・計算する
     """
@@ -76,7 +79,7 @@ def process_recipe_rows(recipes_dict):
     return recipes_list
 
 
-def build_recipes_dict(all_rows):
+def build_recipes_dict(all_rows: list[dict[str, Any]]) -> dict[int, dict[str, Any]]:
     """
     DBの検索結果行（JOINされた情報）から、レシピIDをキーとする辞書を構築する
     """
@@ -90,11 +93,17 @@ def build_recipes_dict(all_rows):
             if serving_size == 0:
                 serving_size = 1
 
+            cooking_time = (
+                COOKING_TIME_MAP.get(cooking_time_id)
+                if isinstance(cooking_time_id, int)
+                else None
+            )
+
             recipes_dict[recipe_id] = {
                 "id": row["id"],
                 "title": row["title"],
                 "description": row["description"],
-                "cooking_time": COOKING_TIME_MAP.get(cooking_time_id),
+                "cooking_time": cooking_time,
                 "serving_for": row.get("serving_for"),
                 "serving_size": serving_size,
                 "ingredients": {},

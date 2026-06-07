@@ -9,7 +9,7 @@ from apps.web.core.database import get_db_connection
 from apps.web.services.search import search_recipes
 
 
-def profile_search(query):
+def profile_search(query: str) -> None:
     print(f"Profiling search for: '{query}'")
     conn = get_db_connection()
     if not conn:
@@ -37,8 +37,5 @@ def profile_search(query):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        query = sys.argv[1]
-    else:
-        query = "玉ねぎ"
+    query = sys.argv[1] if len(sys.argv) > 1 else "玉ねぎ"
     profile_search(query)

@@ -4,7 +4,7 @@ import mysql.connector
 from core.database import get_db_connection
 
 
-def add_index():
+def add_index() -> None:
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -21,7 +21,10 @@ def add_index():
             # Adding composite index on (name, recipe_id)
             # This helps: WHERE name='...' AND recipe_id >= X ORDER BY recipe_id
             cursor.execute(
-                "CREATE INDEX idx_ingredients_name_recipe_id ON ingredients (name, recipe_id)"
+                """
+                CREATE INDEX idx_ingredients_name_recipe_id
+                ON ingredients (name, recipe_id)
+                """
             )
             conn.commit()
             print(
