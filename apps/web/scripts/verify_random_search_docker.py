@@ -7,7 +7,7 @@ from core.database import get_db_connection
 from services.search import get_recipe_details, search_recipes
 
 
-def verify_random_search(query):
+def verify_random_search(query: str) -> None:
     print(f"Verifying Random Search for: '{query}'")
     conn = get_db_connection()
     if not conn:

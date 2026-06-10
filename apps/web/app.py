@@ -9,7 +9,7 @@ import psutil
 
 # Import Core
 from core.utils import jst_converter
-from flask import Flask, g, request
+from flask import Flask, Response, g, request
 from routes.api import api_bp
 from routes.nutrition import nutrition_bp
 
@@ -45,7 +45,7 @@ app.register_blueprint(api_bp)
 
 
 @app.before_request
-def before_request():
+def before_request() -> None:
     g.start_time = time.time()
 
     # CookieからユーザーIDを取得、なければ新規生成
@@ -60,12 +60,12 @@ def before_request():
 
 
 @app.context_processor
-def inject_user_id():
-    return dict(user_id=getattr(g, "user_id", "unknown"))
+def inject_user_id() -> dict[str, str]:
+    return {"user_id": getattr(g, "user_id", "unknown")}
 
 
 @app.after_request
-def after_request(response):
+def after_request(response: Response) -> Response:
     if request.path.startswith("/static"):
         return response
 
@@ -87,8 +87,6 @@ def after_request(response):
         expires = datetime.datetime.now() + datetime.timedelta(days=365)
         response.set_cookie("user_id", g.user_id, expires=expires)
 
-    # 検索単語の収集 logic remains in app middleware as it intercepts ALL requests
-    # Or could be moved to individual routes, but keeping central logging here is fine for consistency.
     if request.path == "/search" and request.method == "POST":
         log_data["search_query"] = request.form.get("query")
         # インデックス/結果ページの検索は 'personal' とする

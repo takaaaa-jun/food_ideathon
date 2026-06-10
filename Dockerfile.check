@@ -9,4 +9,4 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt \
 
 COPY . .
 
-CMD ["sh", "-c", "ruff check . && ruff format --check . && pyrefly check --no-incremental"]
+CMD ["sh", "-c", "ruff check . && ruff format --check . && pyrefly check"]

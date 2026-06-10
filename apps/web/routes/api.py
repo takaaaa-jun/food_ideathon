@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 from flask import Blueprint, current_app, g, jsonify, request
 
@@ -6,7 +7,7 @@ api_bp = Blueprint("api", __name__)
 
 
 @api_bp.route("/api/log_action", methods=["POST"])
-def log_action():
+def log_action() -> Any:
     try:
         data = request.json
         # user_idを追加

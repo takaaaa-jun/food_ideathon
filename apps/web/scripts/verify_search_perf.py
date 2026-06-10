@@ -7,7 +7,7 @@ from core.database import get_db_connection
 from services.search import search_standard_recipes
 
 
-def test_search():
+def test_search() -> None:
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
 

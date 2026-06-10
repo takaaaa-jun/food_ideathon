@@ -32,7 +32,11 @@ try:
     # Check for multiple synonyms for a normalized_name
     print("\nChecking for multiple synonyms:")
     cursor.execute(
-        "SELECT normalized_name, COUNT(*) as c FROM synonym_dictionary GROUP BY normalized_name HAVING c > 1 LIMIT 5"
+        """
+        SELECT normalized_name, COUNT(*) as c
+        FROM synonym_dictionary
+        GROUP BY normalized_name HAVING c > 1 LIMIT 5
+        """
     )
     for row in cursor.fetchall():
         print(f"Normalized: {row[0]}, Count: {row[1]}")
@@ -43,10 +47,13 @@ try:
 
     # Check if normalized_name matches standard_recipe_ingredients
     print(
-        "\nChecking overlap between synonym_dictionary.normalized_name and standard_recipe_ingredients.ingredient_name:"
+        """
+        \nChecking overlap between synonym_dictionary.normalized_name
+        and standard_recipe_ingredients.ingredient_name:
+        """
     )
     cursor.execute("""
-        SELECT s.ingredient_name 
+        SELECT s.ingredient_name
         FROM standard_recipe_ingredients s
         JOIN synonym_dictionary sd ON s.ingredient_name = sd.normalized_name
         LIMIT 5

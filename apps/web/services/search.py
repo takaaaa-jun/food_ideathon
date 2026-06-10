@@ -1,8 +1,15 @@
+from typing import Any, TypedDict
+
 from core.database import get_synonyms, unify_keywords
 from core.utils import build_recipes_dict, process_recipe_rows
 
 
-def _parse_query(cursor, search_query):
+class InclusionStat(TypedDict):
+    group: list[str]
+    count: int
+
+
+def _parse_query(cursor: Any, search_query: str) -> list[list[str]]:
     normalized_query = search_query.replace("　", " ")
     keywords = normalized_query.split()
 
@@ -25,10 +32,13 @@ def _parse_query(cursor, search_query):
     return inclusions
 
 
-def search_recipes(cursor, search_query, start_id=1, limit=10):
+def search_recipes(
+    cursor: Any, search_query: str, start_id: int = 1, limit: int = 10
+) -> tuple[list[dict[str, Any]], int | None]:
     """
     一般レシピの検索処理 (Ingredient Search with Cursor Pagination)
-    Returns: list of dicts (id, title, description, published_at), total_hit_check (bool)
+    Returns: list of dicts
+    (id, title, description, published_at), total_hit_check (bool)
     """
     # Use helper
     inclusions = _parse_query(cursor, search_query)
@@ -65,7 +75,6 @@ def search_recipes(cursor, search_query, start_id=1, limit=10):
                     ORDER BY recipe_id ASC
                     LIMIT %s
                 """
-                # Fetch limit*2 to be safe for deduplication later, though usually 10 is enough per synonym.
                 cursor.execute(sql, (syn, start_id, limit))
                 gathered_ids.extend([row["recipe_id"] for row in cursor.fetchall()])
 
@@ -77,7 +86,7 @@ def search_recipes(cursor, search_query, start_id=1, limit=10):
             # Unified Paged Strategy (Paged Driver + Vectorized Verification)
 
             # 1. Rarest First Selection
-            sorted_inclusions = []
+            sorted_inclusions: list[InclusionStat] = []
             for group in inclusions:
                 total_est = 0
                 for syn in group:
@@ -96,18 +105,21 @@ def search_recipes(cursor, search_query, start_id=1, limit=10):
             other_groups = [item["group"] for item in sorted_inclusions[1:]]
 
             # Helper: Verify batch
-            def verify_batch(candidate_ids, group_synonyms):
+            def verify_batch(
+                candidate_ids: list[int] | set[int],
+                group_synonyms: list[str] | set[str],
+            ) -> set[int]:
                 if not candidate_ids:
                     return set()
                 placeholders_ids = ", ".join(["%s"] * len(candidate_ids))
                 placeholders_names = ", ".join(["%s"] * len(group_synonyms))
                 sql = f"""
-                    SELECT DISTINCT recipe_id 
-                    FROM ingredients 
-                    WHERE name IN ({placeholders_names}) 
+                    SELECT DISTINCT recipe_id
+                    FROM ingredients
+                    WHERE name IN ({placeholders_names})
                     AND recipe_id IN ({placeholders_ids})
                 """
-                params = group_synonyms + candidate_ids
+                params = list(group_synonyms) + list(candidate_ids)
                 cursor.execute(sql, params)
                 return {row["recipe_id"] for row in cursor.fetchall()}
 
@@ -134,7 +146,7 @@ def search_recipes(cursor, search_query, start_id=1, limit=10):
                 if not candidates:
                     break
 
-                candidates = sorted(list(set(candidates)))
+                candidates = sorted(set(candidates))
                 candidates = candidates[
                     :FETCH_BATCH_SIZE
                 ]  # Ensure we adhere to batch size logic
@@ -148,7 +160,7 @@ def search_recipes(cursor, search_query, start_id=1, limit=10):
                         break
                     current_matches &= verify_batch(list(current_matches), grp)
 
-                for mid in sorted(list(current_matches)):
+                for mid in sorted(current_matches):
                     if mid not in found_ids:
                         found_ids.append(mid)
                     if len(found_ids) >= limit:
@@ -157,22 +169,22 @@ def search_recipes(cursor, search_query, start_id=1, limit=10):
                 current_start_id = last_candidate_id + 1
 
         if not found_ids:
-            return []
+            return [], None
 
         placeholders_ids = ", ".join(["%s"] * len(found_ids))
         sql_details = f"""
-            SELECT id, title, description, published_at 
-            FROM recipes 
+            SELECT id, title, description, published_at
+            FROM recipes
             WHERE id IN ({placeholders_ids})
             ORDER BY FIELD(id, {placeholders_ids})
         """
         cursor.execute(sql_details, found_ids + found_ids)
         candidate_recipes = cursor.fetchall()
 
-    return candidate_recipes
+    return candidate_recipes, None
 
 
-def get_recipe_details(cursor, recipe_id):
+def get_recipe_details(cursor: Any, recipe_id: int) -> dict[str, Any] | None:
     """
     特定レシピの詳細情報を取得する
     """
@@ -183,7 +195,7 @@ def get_recipe_details(cursor, recipe_id):
             i.id AS ingredient_id,
             i.name AS ingredient_name, i.quantity,
             s.position, s.memo AS step_memo,
-            
+
             ist.normalized_name,
             iu.normalized_quantity,
             n.enerc_kcal, n.prot, n.fat, n.choavldf, n.fib, n.nacl_eq,
@@ -200,7 +212,8 @@ def get_recipe_details(cursor, recipe_id):
         LEFT JOIN steps AS s ON r.id = s.recipe_id
         LEFT JOIN ingredient_structured AS ist ON i.id = ist.ingredient_id
         LEFT JOIN ingredient_units AS iu ON i.id = iu.ingredient_id
-        LEFT JOIN nutritions AS n ON ist.normalized_name = n.name COLLATE utf8mb4_general_ci
+        LEFT JOIN nutritions AS n
+        ON ist.normalized_name = n.name COLLATE utf8mb4_general_ci
         LEFT JOIN recipe_nutrition_info AS rni ON r.id = rni.recipe_id
         WHERE r.id = %s
         ORDER BY i.id, s.position ASC;
@@ -220,7 +233,11 @@ def get_recipe_details(cursor, recipe_id):
     return None
 
 
-def search_standard_recipes(cursor, search_query, search_mode="recipe"):
+def search_standard_recipes(
+    cursor: Any,
+    search_query: str,
+    search_mode: str = "recipe",
+) -> list[tuple[str, dict[str, Any]]]:
     """
     基礎レシピの検索処理 (Optimized)
     """
@@ -256,12 +273,18 @@ def search_standard_recipes(cursor, search_query, search_mode="recipe"):
                 normalized_name = get_normalized_name(cursor, keyword)
                 if normalized_name:
                     cursor.execute(
-                        "SELECT standard_recipe_id, count FROM standard_recipe_ingredients WHERE ingredient_name = %s",
+                        """
+                        SELECT standard_recipe_id, count
+                        FROM standard_recipe_ingredients WHERE ingredient_name = %s
+                        """,
                         (normalized_name,),
                     )
                 else:
                     cursor.execute(
-                        "SELECT standard_recipe_id, count FROM standard_recipe_ingredients WHERE ingredient_name LIKE %s",
+                        """
+                        SELECT standard_recipe_id, count
+                        FROM standard_recipe_ingredients WHERE ingredient_name LIKE %s
+                        """,
                         (f"%{keyword}%",),
                     )
 
@@ -301,12 +324,19 @@ def search_standard_recipes(cursor, search_query, search_mode="recipe"):
                     normalized_name = get_normalized_name(cursor, keyword)
                     if normalized_name:
                         cursor.execute(
-                            "SELECT DISTINCT standard_recipe_id FROM standard_recipe_ingredients WHERE ingredient_name = %s",
+                            """
+                            SELECT DISTINCT standard_recipe_id
+                            FROM standard_recipe_ingredients WHERE ingredient_name = %s
+                            """,
                             (normalized_name,),
                         )
                     else:
                         cursor.execute(
-                            "SELECT DISTINCT standard_recipe_id FROM standard_recipe_ingredients WHERE ingredient_name LIKE %s",
+                            """
+                            SELECT DISTINCT standard_recipe_id
+                            FROM standard_recipe_ingredients
+                            WHERE ingredient_name LIKE %s
+                            """,
                             (f"%{keyword}%",),
                         )
                     for row in cursor.fetchall():
@@ -320,8 +350,6 @@ def search_standard_recipes(cursor, search_query, search_mode="recipe"):
             target_ids = [r["id"] for r in scored_recipes[:5]]
 
         else:
-            # No inclusions provided in ingredient mode? Just return empty or all?
-            # Original logic returned all IDs. But effectively we need inclusions for ingredient search.
             return []
 
     else:
@@ -345,7 +373,11 @@ def search_standard_recipes(cursor, search_query, search_mode="recipe"):
             return []
 
         # Optimize: Sort by popularity (recipe_count) and LIMIT 5
-        sql = f"SELECT id FROM standard_recipes WHERE {' AND '.join(conditions)} ORDER BY recipe_count DESC LIMIT 5"
+        sql = f"""
+        SELECT id FROM standard_recipes
+        WHERE {" AND ".join(conditions)}
+        ORDER BY recipe_count DESC LIMIT 5
+        """
         cursor.execute(sql, params)
         target_ids = [row["id"] for row in cursor.fetchall()]
 
@@ -360,7 +392,7 @@ def search_standard_recipes(cursor, search_query, search_mode="recipe"):
     cursor.execute(sql_std, target_ids)
     recipes_rows = cursor.fetchall()
 
-    recipes_data = {}
+    recipes_data: dict[int, dict[str, Any]] = {}
     for row in recipes_rows:
         recipes_data[row["id"]] = {
             "id": row["id"],
@@ -373,7 +405,10 @@ def search_standard_recipes(cursor, search_query, search_mode="recipe"):
         }
 
     # 2. Ingredients
-    sql_get_ingredients = f"SELECT * FROM standard_recipe_ingredients WHERE standard_recipe_id IN ({placeholders})"
+    sql_get_ingredients = f"""
+    SELECT * FROM standard_recipe_ingredients
+    WHERE standard_recipe_id IN ({placeholders})
+    """
     cursor.execute(sql_get_ingredients, target_ids)
     ingredients_rows = cursor.fetchall()
 
@@ -394,7 +429,6 @@ def search_standard_recipes(cursor, search_query, search_mode="recipe"):
                 recipes_data[r_id]["ingredient"][group][name] = [0]
 
             recipes_data[r_id]["ingredient"][group][name][0] = count
-            recipes_data[r_id]["ingredient"][group][name][0] = count
             recipes_data[r_id]["ingredient"][group]["all"][0] += count
 
     # Sort categories by total count descending for each recipe
@@ -408,7 +442,10 @@ def search_standard_recipes(cursor, search_query, search_mode="recipe"):
         )
         recipes_data[r_id]["ingredient"] = sorted_ingredients
     # 3. Steps
-    sql_get_steps = f"SELECT * FROM standard_recipe_steps WHERE standard_recipe_id IN ({placeholders}) ORDER BY count DESC"
+    sql_get_steps = f"""
+    SELECT * FROM standard_recipe_steps
+    WHERE standard_recipe_id IN ({placeholders}) ORDER BY count DESC
+    """
     cursor.execute(sql_get_steps, target_ids)
     steps_rows = cursor.fetchall()
 
@@ -424,15 +461,16 @@ def search_standard_recipes(cursor, search_query, search_mode="recipe"):
             )
 
     # Preserve Order of target_ids
-    final_recipes_list = []
-    for tid in target_ids:
-        if tid in recipes_data:
-            final_recipes_list.append((recipes_data[tid]["name"], recipes_data[tid]))
+    final_recipes_list = [
+        (recipes_data[tid]["name"], recipes_data[tid])
+        for tid in target_ids
+        if tid in recipes_data
+    ]
 
     return final_recipes_list
 
 
-def get_standard_recipe_details(cursor, recipe_id):
+def get_standard_recipe_details(cursor: Any, recipe_id: int) -> dict[str, Any] | None:
     """
     基準レシピの詳細情報を取得する
     """
@@ -449,8 +487,8 @@ def get_standard_recipe_details(cursor, recipe_id):
     # 2. Ingredients
     cursor.execute(
         """
-        SELECT group_name, ingredient_name, count 
-        FROM standard_recipe_ingredients 
+        SELECT group_name, ingredient_name, count
+        FROM standard_recipe_ingredients
         WHERE standard_recipe_id = %s
         ORDER BY count DESC
     """,
@@ -458,8 +496,6 @@ def get_standard_recipe_details(cursor, recipe_id):
     )
     ingredients_rows = cursor.fetchall()
 
-    # Structure ingredients by group (Same format as search_standard_recipes for template reuse)
-    # Structure: { 'CategoryName': {'all': [total], 'onion': [10], ...} }
     ingredients_data = {}
     for row in ingredients_rows:
         grp = row["group_name"] or "その他"

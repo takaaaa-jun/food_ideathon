@@ -11,7 +11,7 @@ from apps.web.app import app
 
 
 class LogTestCase(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.app = app.test_client()
         self.log_dir = os.path.join(os.path.dirname(__file__), "../logs")
         self.log_file = os.path.join(self.log_dir, "app.log")
@@ -19,7 +19,7 @@ class LogTestCase(unittest.TestCase):
         if not os.path.exists(self.log_file):
             open(self.log_file, "a").close()
 
-    def test_log_action(self):
+    def test_log_action(self) -> None:
         unique_action = f"test_action_{uuid.uuid4()}"
         response = self.app.post(
             "/api/log_action",
@@ -33,7 +33,7 @@ class LogTestCase(unittest.TestCase):
             self.assertIn("ACTION_LOG", content)
             self.assertIn(unique_action, content)
 
-    def test_search_log(self):
+    def test_search_log(self) -> None:
         unique_query = f"test_query_{uuid.uuid4()}"
         # 検索リクエスト
         response = self.app.post(
@@ -49,7 +49,7 @@ class LogTestCase(unittest.TestCase):
             # search_mode が 'personal' になっているか確認
             self.assertIn('"search_mode": "personal"', content)
 
-    def test_ip_address(self):
+    def test_ip_address(self) -> None:
         # プロキシ経由のリクエストをシミュレーション
         headers = {"X-Forwarded-For": "192.168.1.100"}
         response = self.app.post(
@@ -64,7 +64,7 @@ class LogTestCase(unittest.TestCase):
             content = f.read()
             self.assertIn("192.168.1.100", content)
 
-    def test_cookie_identification(self):
+    def test_cookie_identification(self) -> None:
         # 1. 初回リクエスト：Cookieなし -> Set-Cookieされるはず
         response1 = self.app.get("/")
         self.assertEqual(response1.status_code, 200)
@@ -81,15 +81,6 @@ class LogTestCase(unittest.TestCase):
 
         self.assertIsNotNone(user_id_cookie)
 
-        # 2. 2回目リクエスト：Cookieあり -> 同じIDが維持され、Set-Cookieされない（または同じID）はず
-        # test_clientでcookieを送信する
-        # set_cookie(key, value='', ...) for typical client usage or set_cookie(server_name, key, value) for test client?
-        # Flask test client set_cookie signature: set_cookie(server_name, key, value, ...)
-        # The error says "takes from 2 to 3 positional arguments but 4 were given". self.app is test_client.
-        # It seems I am verifying the logic but using it wrong.
-        # Correct usage: client.set_cookie('localhost', 'user_id', user_id_cookie) should work if methods match.
-        # But maybe 'localhost' is implicit or positional args are different in this version.
-        # Let's try specifying keyword args or checking signature.
         self.app.set_cookie("user_id", user_id_cookie)
         response2 = self.app.get("/")
         self.assertEqual(response2.status_code, 200)

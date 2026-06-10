@@ -1,5 +1,7 @@
 import os
+import random
 import sys
+from typing import Any
 
 import mysql.connector
 
@@ -12,7 +14,7 @@ with open(config_path, encoding="utf-8") as f:
 DB_CONFIG = config_vars["DB_CONFIG"]
 
 
-def get_db_connection():
+def get_db_connection() -> Any:
     try:
         conn = mysql.connector.connect(**DB_CONFIG)
         return conn
@@ -22,7 +24,7 @@ def get_db_connection():
 
 
 # --- Helper Functions (Copied from app.py) ---
-def get_synonyms(cursor, keyword):
+def get_synonyms(cursor: Any, keyword: str) -> list[str]:
     synonyms = {keyword}
     sql_get_synonyms = (
         "SELECT synonym FROM synonym_dictionary WHERE normalized_name = %s"
@@ -46,14 +48,14 @@ def get_synonyms(cursor, keyword):
     return list(synonyms)
 
 
-def unify_keywords(cursor, keywords):
+def unify_keywords(cursor: Any, keywords: list[str]) -> list[str]:
     if not keywords:
         return []
 
     placeholders = ", ".join(["%s"] * len(keywords))
     sql = f"""
-        SELECT synonym, normalized_name 
-        FROM synonym_dictionary 
+        SELECT synonym, normalized_name
+        FROM synonym_dictionary
         WHERE synonym IN ({placeholders})
     """
     cursor.execute(sql, keywords)
@@ -71,7 +73,7 @@ def unify_keywords(cursor, keywords):
         placeholders_norm = ", ".join(["%s"] * len(seen_norms))
         sql_best = f"""
             SELECT normalized_name, synonym, id
-            FROM synonym_dictionary 
+            FROM synonym_dictionary
             WHERE normalized_name IN ({placeholders_norm})
             ORDER BY id ASC
         """
@@ -99,15 +101,13 @@ def unify_keywords(cursor, keywords):
     return unified_keywords
 
 
-import random
-
 # ... (Previous imports and config) ...
 
 # ... (Helper functions: get_db_connection, get_synonyms, unify_keywords) ...
 
 
 # --- Verification Logic ---
-def verify_search(search_query):
+def verify_search(search_query: str) -> None:
     print(f"\n=== Verifying Search for: '{search_query}' ===")
 
     conn = get_db_connection()
@@ -181,7 +181,7 @@ def verify_search(search_query):
             return
 
         # Debug: Print available attributes
-        available_attributes_raw = set(row["attribute"] for row in candidates)
+        available_attributes_raw = {row["attribute"] for row in candidates}
         print(f"Available Attributes in DB (Raw): {available_attributes_raw}")
 
         # Normalize attributes in candidates (convert full-width to half-width)
@@ -199,7 +199,7 @@ def verify_search(search_query):
 
         # Filter by attribute
         # Check if selected attribute has results
-        available_attributes = set(row["attribute"] for row in candidates)
+        available_attributes = {row["attribute"] for row in candidates}
         print(f"Available Attributes (Normalized): {available_attributes}")
 
         # Strict filtering logic verification
@@ -208,9 +208,12 @@ def verify_search(search_query):
 
         if available_valid_attributes:
             if selected_attribute not in available_valid_attributes:
-                selected_attribute = list(available_valid_attributes)[0]
+                selected_attribute = next(iter(available_valid_attributes))
                 print(
-                    f"Switched Attribute to: {selected_attribute} (original choice not available)"
+                    f"""
+                    Switched Attribute to:
+                    {selected_attribute} (original choice not available)
+                    """
                 )
         else:
             print("No valid attributes (cookpad/rakuten) found in candidates.")
@@ -230,7 +233,10 @@ def verify_search(search_query):
         print("Final Display (Random 10 from top 20):")
         for row in final_results:
             print(
-                f" - ID: {row['recipe_id']}, Title: {row['title']}, Attribute: {row['attribute']}"
+                f"""
+                - ID: {row["recipe_id"]}, Title: {row["title"]},
+                Attribute: {row["attribute"]}
+                """
             )
 
     else:

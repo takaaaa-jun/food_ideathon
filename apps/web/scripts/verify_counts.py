@@ -18,12 +18,14 @@ try:
     GROUP_PREFIX = "17"  # 17調味料...
 
     print(
-        f"--- Checking Ingredients for Recipe ID {RECIPE_ID} in Group {GROUP_PREFIX} ---"
+        f"""
+        --- Checking Ingredients for Recipe ID {RECIPE_ID} in Group {GROUP_PREFIX} ---
+        """
     )
 
     query = """
         SELECT ingredient_name, count, group_name
-        FROM standard_recipe_ingredients 
+        FROM standard_recipe_ingredients
         WHERE standard_recipe_id = %s AND group_name LIKE %s
     """
     cursor.execute(query, (RECIPE_ID, f"{GROUP_PREFIX}%"))
