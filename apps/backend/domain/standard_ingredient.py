@@ -1,4 +1,6 @@
 from .ingredient_group import IngredientGroup
+
+
 class IngredientTag:
     def __init__(
         self,
@@ -7,12 +9,14 @@ class IngredientTag:
     ) -> None:
         self.tag_id = tag_id
         self.tag_name = tag_name
+
+
 class StandardIngredient:
     def __init__(
         self,
         standard_ingredient_count: int,
         standard_ingredient_tag: IngredientTag,
-        standard_ingredient_group: IngredientGroup
+        standard_ingredient_group: IngredientGroup,
     ) -> None:
         self.standard_ingredient_count = standard_ingredient_count
         self.standard_ingredient_tag = standard_ingredient_tag

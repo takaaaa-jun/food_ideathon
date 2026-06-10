@@ -2,6 +2,7 @@ from .ingredient import Ingredient
 from .nutrition import Nutrition
 from .step import Step
 
+
 class Recipe:
     def __init__(
         self,
@@ -9,7 +10,7 @@ class Recipe:
         recipe_title: str,
         description: str | None,
         ingredients: list[Ingredient],
-        steps: list[step],
+        steps: list[Step],
         nutrition: Nutrition | None,
     ) -> None:
         self.recipe_id = recipe_id

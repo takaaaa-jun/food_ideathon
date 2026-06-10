@@ -9,6 +9,7 @@ class Ingredient:
         self.ingredient_name = ingredient_name
         self.quantity = quantity
 
+
 class IngredientDetail:
     def __init__(
         self,
