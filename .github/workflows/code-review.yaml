@@ -1,0 +1,26 @@
+name: code-review
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "**/*.py"
+      - "**/*.html"
+  push:
+    branches:
+      - main
+    paths:
+      - "**/*.py"
+      - "**/*.html"
+
+jobs:
+  review:
+    name: AI code review
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run AI review
+        run: ./scripts/ai_review.sh

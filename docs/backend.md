@@ -14,3 +14,9 @@
 ## 参考サイト・ドキュメント
 - [Flaskドキュメント][https://flask.palletsprojects.com/en/stable/]
 - [Pythonフレームワーク一覧][https://syp.vn/jp/article/fastapi-flask-django-python-backend-framework-comparison]
+
+## 設計
+- バックエンドの設計についてまとめる
+
+### domain層
+- データの構造を定義
