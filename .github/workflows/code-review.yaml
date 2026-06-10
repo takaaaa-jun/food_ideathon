@@ -7,20 +7,28 @@ on:
     paths:
       - "**/*.py"
       - "**/*.html"
-  push:
-    branches:
-      - main
-    paths:
-      - "**/*.py"
-      - "**/*.html"
 
 jobs:
   review:
     name: AI code review
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
 
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11-slim"
+
+      - name: Install Gemini SDK
+        run: python -m pip install --upgrade pip google-genai
+
       - name: Run AI review
-        run: ./scripts/ai_review.sh
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/ai_review.py

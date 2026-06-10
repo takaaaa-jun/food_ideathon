@@ -2,10 +2,11 @@ class NutritionItem:
     def __init__(
         self,
         nutrient: str,
-        value: float, 
+        value: float,
     ) -> None:
         self.nutrient = nutrient
         self.value = value
+
 
 class Nutrition:
     def __init__(
@@ -27,4 +28,3 @@ class Nutrition:
         self.carbs = carbs
         self.fiber = fiber
         self.salt = salt
-
