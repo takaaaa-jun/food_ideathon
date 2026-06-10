@@ -3,6 +3,8 @@
         "ms-python.python",
         "ms-python.vscode-pylance",
         "ms-azuretools.vscode-docker",
-        "wholroyd.jinja"
+        "wholroyd.jinja",
+        "charliermarsh.ruff",
+        "meta.pyrefly",
     ]
 }

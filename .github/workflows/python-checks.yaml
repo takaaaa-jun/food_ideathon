@@ -11,5 +11,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run Ruff and Pyrefly in Docker
+      - name: Run checks in Docker
         run: docker compose run --rm check
