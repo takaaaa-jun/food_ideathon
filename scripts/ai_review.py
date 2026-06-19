@@ -44,7 +44,7 @@ def get_diff(base_ref: str) -> str:
         [
             "git",
             "diff",
-            f"origin/{base}...HEAD",
+            f"{base}...HEAD",
         ],
         check=True,
         capture_output=True,
