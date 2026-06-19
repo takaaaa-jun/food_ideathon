@@ -11,6 +11,7 @@ on:
 jobs:
   review:
     name: AI code review
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
 
     permissions:
