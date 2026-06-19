@@ -10,8 +10,6 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && pip install --no-cache-dir -r /tmp/requirements.txt \
     && pip install --no-cache-dir google-genai==2.9.0 ruff pyrefly \
-    && true
-
 COPY . .
 
 CMD ["sh", "-c", "ruff check . && ruff format --check . && pyrefly check"]

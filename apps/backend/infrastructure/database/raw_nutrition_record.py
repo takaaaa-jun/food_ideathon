@@ -12,8 +12,8 @@ class RawNutritionRecord:
         FIB: float,
         NACL_EQ: float,
     ) -> None:
-        self.id = id
-        self.name = name
+        self.nutrition_id = id
+        self.nutrition_name = name
         self.group_id = group_id
         self.group_name = group_name
         self.energy = ENERC_KCAL
