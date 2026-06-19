@@ -106,13 +106,18 @@ def generate_review(diff: str) -> str:
             sleep_seconds = base_sleep_seconds * (2 ** (attempt - 1))
             sleep_seconds += random.uniform(0.0, 1.0)
             print(
-                f"Gemini API is temporarily unavailable (attempt {attempt}/{max_attempts}). "
+                f"""
+                Gemini API is temporarily unavailable
+                (attempt {attempt}/{max_attempts}).
+                """
                 f"Retrying in {sleep_seconds:.1f} seconds..."
             )
             time.sleep(sleep_seconds)
 
     return (
-        "Gemini API was temporarily unavailable, so the AI review could not be generated "
+        """
+        Gemini API was temporarily unavailable, so the AI review could not be generated
+        """
         f"after {max_attempts} attempts.\n\n"
         f"Last error: {last_error}"
     )
