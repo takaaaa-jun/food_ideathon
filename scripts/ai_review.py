@@ -19,10 +19,10 @@ def get_pr_context() -> tuple[int, str]:
     if pull_request is None:
         raise RuntimeError("This workflow only supports pull_request events.")
 
-    return (
-        pull_request["number"],
-        pull_request["base"]["ref"],
-    )
+    pr_number = pull_request["number"]
+    base_ref = pull_request["base"]["ref"]
+
+    return pr_number, base_ref
 
 
 def get_diff(base_ref: str) -> str:
@@ -32,14 +32,14 @@ def get_diff(base_ref: str) -> str:
         capture_output=True,
         text=True,
     )
-    
+
     base = subprocess.run(
         ["git", "merge-base", f"origin/{base_ref}", "HEAD"],
         check=True,
         capture_output=True,
         text=True,
     ).stdout.strip()
-    
+
     result = subprocess.run(
         [
             "git",
