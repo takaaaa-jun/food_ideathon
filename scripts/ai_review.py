@@ -26,11 +26,25 @@ def get_pr_context() -> tuple[int, str]:
 
 
 def get_diff(base_ref: str) -> str:
+    subprocess.run(
+        ["git", "fetch", "origin", base_ref],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    
+    base = subprocess.run(
+        ["git", "merge-base", f"origin/{base_ref}", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    
     result = subprocess.run(
         [
             "git",
             "diff",
-            f"origin/{base_ref}...HEAD",
+            f"origin/{base}...HEAD",
         ],
         check=True,
         capture_output=True,
