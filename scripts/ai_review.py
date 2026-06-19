@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import json
 import os
+import random
 import subprocess
+import time
+import urllib.error
 import urllib.request
 
 from google import genai
+from google.genai.errors import ServerError
 
 
 def get_pr_context() -> tuple[int, str]:
@@ -41,11 +45,7 @@ def get_diff(base_ref: str) -> str:
     ).stdout.strip()
 
     result = subprocess.run(
-        [
-            "git",
-            "diff",
-            f"{base}...HEAD",
-        ],
+        ["git", "diff", f"{base}...HEAD"],
         check=True,
         capture_output=True,
         text=True,
@@ -55,6 +55,10 @@ def get_diff(base_ref: str) -> str:
 
 
 def generate_review(diff: str) -> str:
+    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    if not api_key:
+        return "GEMINI_API_KEY / GOOGLE_API_KEY is not configured."
+
     prompt = f"""
 # コードレビュー
 - あなたはエンジニアです.
@@ -78,16 +82,40 @@ def generate_review(diff: str) -> str:
 
 {diff}
 """
-    client = genai.Client(
-        api_key=os.environ["GEMINI_API_KEY"],
-    )
 
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt,
-    )
+    client = genai.Client(api_key=api_key)
 
-    return response.text or "AI review result was empty."
+    max_attempts = 4
+    base_sleep_seconds = 2.0
+
+    last_error: Exception | None = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt,
+            )
+            text = response.text or "AI review result was empty."
+            return text
+
+        except ServerError as e:
+            last_error = e
+            if attempt == max_attempts:
+                break
+
+            sleep_seconds = base_sleep_seconds * (2 ** (attempt - 1))
+            sleep_seconds += random.uniform(0.0, 1.0)
+            print(
+                f"Gemini API is temporarily unavailable (attempt {attempt}/{max_attempts}). "
+                f"Retrying in {sleep_seconds:.1f} seconds..."
+            )
+            time.sleep(sleep_seconds)
+
+    return (
+        "Gemini API was temporarily unavailable, so the AI review could not be generated "
+        f"after {max_attempts} attempts.\n\n"
+        f"Last error: {last_error}"
+    )
 
 
 def post_comment(
@@ -116,8 +144,13 @@ def post_comment(
         },
     )
 
-    with urllib.request.urlopen(request):
-        pass
+    try:
+        with urllib.request.urlopen(request):
+            pass
+    except urllib.error.HTTPError as e:
+        raise RuntimeError(
+            f"Failed to post PR comment: HTTP {e.code} {e.reason}"
+        ) from e
 
 
 def main() -> None:
