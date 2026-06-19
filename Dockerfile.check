@@ -4,8 +4,13 @@ WORKDIR /workspace
 
 COPY apps/web/requirements.txt /tmp/requirements.txt
 
-RUN pip install --no-cache-dir -r /tmp/requirements.txt \
-    && pip install --no-cache-dir ruff pyrefly
+# Install system packages required for git and common builds, then Python deps
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --no-cache-dir -r /tmp/requirements.txt \
+    && pip install --no-cache-dir google-genai==2.9.0 ruff pyrefly \
+    && true
 
 COPY . .
 

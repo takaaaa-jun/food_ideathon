@@ -146,6 +146,9 @@ docker compose run --rm check sh -c "ruff check . && ruff format --check ."
 docker compose run --rm check sh -c "ruff check . && ruff format --check . && pyrefly check"
 docker compose run --rm check-fix
 docker compose run --rm check sh -c "pyrefly check"
+
+docker compose build --no-cache check
+docker compose run --rm -e GITHUB_EVENT_PATH=scripts/sample_event.json -e GITHUB_REPOSITORY=owner/repo -e SKIP_GIT_FETCH=1 check python scripts/ai_review.py
 ```
 
 ## ライセンス

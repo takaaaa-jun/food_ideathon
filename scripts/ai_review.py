@@ -30,15 +30,22 @@ def get_pr_context() -> tuple[int, str]:
 
 
 def get_diff(base_ref: str) -> str:
-    subprocess.run(
-        ["git", "fetch", "origin", base_ref],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
+    # In CI this fetches remote base; for local/docker testing, set SKIP_GIT_FETCH=1 to avoid network fetch.
+    if not os.environ.get("SKIP_GIT_FETCH"):
+        subprocess.run(
+            ["git", "fetch", "origin", base_ref],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+    left = f"origin/{base_ref}"
+    if os.environ.get("SKIP_GIT_FETCH"):
+        # when skipping fetch, fall back to local ref
+        left = base_ref
 
     base = subprocess.run(
-        ["git", "merge-base", f"origin/{base_ref}", "HEAD"],
+        ["git", "merge-base", left, "HEAD"],
         check=True,
         capture_output=True,
         text=True,
@@ -125,7 +132,11 @@ def generate_review(diff: str) -> str:
 
 def post_comment(pr_number: int, body: str) -> None:
     repository = os.environ["GITHUB_REPOSITORY"]
-    token = os.environ["GITHUB_TOKEN"]
+    token = os.environ.get("GITHUB_TOKEN")
+
+    if not token:
+        print("GITHUB_TOKEN is not set. Skipping posting PR comment.")
+        return
 
     url = f"https://api.github.com/repos/{repository}/issues/{pr_number}/comments"
     payload = json.dumps({"body": body}).encode("utf-8")
@@ -146,6 +157,17 @@ def post_comment(pr_number: int, body: str) -> None:
             pass
     except urllib.error.HTTPError as e:
         error_body = e.read().decode("utf-8", errors="replace")
+        # Handle common CI permission errors (e.g. token from forked PRs)
+        if e.code == 403:
+            print(
+                "Failed to post PR comment: HTTP 403 Forbidden.\n"
+                "This usually means the provided token cannot access the resource (e.g. GITHUB_TOKEN lacks permissions or the run is from a forked PR).\n"
+                "If this is running in GitHub Actions, consider granting `issues: write`/`pull-requests: write` permissions in the workflow,\n"
+                "or use a personal access token stored in repository secrets for cross-repo/forked-PR comments.\n"
+                f"Response body:\n{error_body}"
+            )
+            return
+
         raise RuntimeError(
             f"Failed to post PR comment: HTTP {e.code} {e.reason}\n{error_body}"
         ) from e
