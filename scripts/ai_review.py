@@ -30,7 +30,8 @@ def get_pr_context() -> tuple[int, str]:
 
 
 def get_diff(base_ref: str) -> str:
-    # In CI this fetches remote base; for local/docker testing, set SKIP_GIT_FETCH=1 to avoid network fetch.
+    # In CI this fetches remote base; for local/docker testing,
+    # set SKIP_GIT_FETCH=1 to avoid network fetch.
     if not os.environ.get("SKIP_GIT_FETCH"):
         subprocess.run(
             ["git", "fetch", "origin", base_ref],
@@ -161,9 +162,13 @@ def post_comment(pr_number: int, body: str) -> None:
         if e.code == 403:
             print(
                 "Failed to post PR comment: HTTP 403 Forbidden.\n"
-                "This usually means the provided token cannot access the resource (e.g. GITHUB_TOKEN lacks permissions or the run is from a forked PR).\n"
-                "If this is running in GitHub Actions, consider granting `issues: write`/`pull-requests: write` permissions in the workflow,\n"
-                "or use a personal access token stored in repository secrets for cross-repo/forked-PR comments.\n"
+                "This usually means the provided token cannot access the resource"
+                "(e.g. GITHUB_TOKEN lacks permissions"
+                "or the run is from a forked PR).\n"
+                "If this is running in GitHub Actions, consider granting"
+                "`issues: write`/`pull-requests: write` permissions in the workflow,\n"
+                "or use a personal access token stored in"
+                "repository secrets for cross-repo/forked-PR comments.\n"
                 f"Response body:\n{error_body}"
             )
             return
