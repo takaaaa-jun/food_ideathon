@@ -11,18 +11,23 @@ on:
 jobs:
   review:
     name: AI code review
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
       issues: write
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11-slim"
+          python-version: "3.11"
 
       - name: Install Gemini SDK
         run: python -m pip install --upgrade pip google-genai

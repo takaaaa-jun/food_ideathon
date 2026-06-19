@@ -117,10 +117,10 @@ def build_recipes_dict(all_rows: list[dict[str, Any]]) -> dict[int, dict[str, An
                     "salt": row.get("total_salt") or 0,
                 },
                 "calculated_nutrition": {
-                    "energy": 0,
-                    "protein": 0,
-                    "fat": 0,
-                    "carbs": 0,
+                    "energy": 0.0,
+                    "protein": 0.0,
+                    "fat": 0.0,
+                    "carbs": 0.0,
                 },
             }
 

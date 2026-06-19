@@ -2,3 +2,4 @@ Flask
 mysql-connector-python
 gunicorn
 psutil
+dotenv
