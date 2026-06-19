@@ -123,20 +123,12 @@ def generate_review(diff: str) -> str:
     )
 
 
-def post_comment(
-    pr_number: int,
-    body: str,
-) -> None:
+def post_comment(pr_number: int, body: str) -> None:
     repository = os.environ["GITHUB_REPOSITORY"]
     token = os.environ["GITHUB_TOKEN"]
 
     url = f"https://api.github.com/repos/{repository}/issues/{pr_number}/comments"
-
-    payload = json.dumps(
-        {
-            "body": body,
-        }
-    ).encode("utf-8")
+    payload = json.dumps({"body": body}).encode("utf-8")
 
     request = urllib.request.Request(
         url,
@@ -153,8 +145,9 @@ def post_comment(
         with urllib.request.urlopen(request):
             pass
     except urllib.error.HTTPError as e:
+        error_body = e.read().decode("utf-8", errors="replace")
         raise RuntimeError(
-            f"Failed to post PR comment: HTTP {e.code} {e.reason}"
+            f"Failed to post PR comment: HTTP {e.code} {e.reason}\n{error_body}"
         ) from e
 
 
