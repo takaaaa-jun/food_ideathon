@@ -140,6 +140,14 @@ docker compose restart app
 docker compose down
 ```
 
+### フォーマッタとリンタ
+```bash
+docker compose run --rm check sh -c "ruff check . && ruff format --check ."
+docker compose run --rm check sh -c "ruff check . && ruff format --check . && pyrefly check"
+docker compose run --rm check-fix
+docker compose run --rm check sh -c "pyrefly check"
+```
+
 ## ライセンス
 
 Copyright (C) 2025 Jun Takahashi All Right Reserved.
