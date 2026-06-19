@@ -17,9 +17,7 @@ def get_pr_context() -> tuple[int, str]:
     pull_request = payload.get("pull_request")
 
     if pull_request is None:
-        raise RuntimeError(
-            "This workflow only supports pull_request events."
-        )
+        raise RuntimeError("This workflow only supports pull_request events.")
 
     return (
         pull_request["number"],
@@ -45,7 +43,8 @@ def get_diff(base_ref: str) -> str:
 def generate_review(diff: str) -> str:
     prompt = f"""
 # コードレビュー
-- あなたはエンジニアです．私が作成しているWebアプリについて，コードレビューをお願いします．
+- あなたはエンジニアです.
+- 私が作成しているWebアプリについて, コードレビューをお願いします.
 
 ## 出力要件
 - 以下の**差分**をレビューしてください．
@@ -65,11 +64,6 @@ def generate_review(diff: str) -> str:
 
 {diff}
 """
-
-    if api_key is None:
-        raise RuntimeError(
-            "GEMINI_API_KEY is not configured."
-        )
     client = genai.Client(
         api_key=os.environ["GEMINI_API_KEY"],
     )
@@ -89,10 +83,7 @@ def post_comment(
     repository = os.environ["GITHUB_REPOSITORY"]
     token = os.environ["GITHUB_TOKEN"]
 
-    url = (
-        f"https://api.github.com/repos/"
-        f"{repository}/issues/{pr_number}/comments"
-    )
+    url = f"https://api.github.com/repos/{repository}/issues/{pr_number}/comments"
 
     payload = json.dumps(
         {
