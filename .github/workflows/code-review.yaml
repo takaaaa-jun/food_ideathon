@@ -12,6 +12,7 @@ jobs:
   review:
     name: AI code review
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
       issues: write
