@@ -9,7 +9,7 @@ def convert_ingredient_group_data(
 ) -> IngredientGroup:
 
     ingredient_group = IngredientGroup(
-        nutrition_id=record.nutrition_id,
+        food_id=record.food_id,
         group_id=record.group_id,
         group_name=record.group_name,
     )

@@ -7,8 +7,8 @@ def convert_nutrition_data(
 ) -> Nutrition:
 
     nutrition = Nutrition(
-        nutrition_id=record.nutrition_id,
-        nutrition_name=record.nutrition_name,
+        food_id=record.food_id,
+        food_name=record.food_name,
         energy=NutritionItem("energy", record.energy),
         protein=NutritionItem("protein", record.protein),
         fat=NutritionItem("fat", record.fat),
