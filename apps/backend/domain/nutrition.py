@@ -11,8 +11,8 @@ class NutritionItem:
 class Nutrition:
     def __init__(
         self,
-        nutrition_id: int,
-        nutrition_name: str,
+        food_id: int,
+        food_name: str,
         energy: NutritionItem,
         protein: NutritionItem,
         fat: NutritionItem,
@@ -20,8 +20,8 @@ class Nutrition:
         fiber: NutritionItem,
         salt: NutritionItem,
     ) -> None:
-        self.nutrition_id = nutrition_id
-        self.nutrition_name = nutrition_name
+        self.food_id = food_id
+        self.food_name = food_name
         self.energy = energy
         self.protein = protein
         self.fat = fat
