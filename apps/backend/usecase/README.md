@@ -1,2 +1,2 @@
-# Usecase層
-- 栄養データをドメイン層のデータ構造に変換する処理
+# usecase層
+- infrastructure層から受け取ったrecordデータをdomain層のデータに変換する処理
