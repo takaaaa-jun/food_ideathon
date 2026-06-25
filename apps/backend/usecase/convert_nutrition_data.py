@@ -1,16 +1,10 @@
-from apps.backend.domain.ingredient_group import IngredientGroup
 from apps.backend.domain.nutrition import Nutrition, NutritionItem
 from apps.backend.infrastructure.database.raw_nutrition_record import RawNutritionRecord
 
 
 def convert_nutrition_data(
     record: RawNutritionRecord,
-) -> tuple[Nutrition, IngredientGroup]:
-
-    group = IngredientGroup(
-        group_id=record.group_id,
-        group_name=record.group_name,
-    )
+) -> Nutrition:
 
     nutrition = Nutrition(
         nutrition_id=record.nutrition_id,
