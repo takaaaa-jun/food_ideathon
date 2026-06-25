@@ -37,8 +37,8 @@ class NutritionRepository:
             return None
 
         return RawNutritionRecord(
-            nutrition_id=raw["id"],
-            nutrition_name=raw["name"],
+            food_id=raw["id"],
+            food_name=raw["name"],
             energy=raw["ENERC_KCAL"],
             protein=raw["protein"],
             fat=raw["fat"],

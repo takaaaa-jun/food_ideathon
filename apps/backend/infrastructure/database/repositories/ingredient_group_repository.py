@@ -34,7 +34,7 @@ class IngredientGroupRepository:
             return None
 
         return RawIngredientGroupRecord(
-            nutrition_id=raw["id"],
+            food_id=raw["id"],
             group_id=raw["group_id"],
             group_name=raw["group_name"],
         )
