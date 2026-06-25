@@ -1,8 +1,8 @@
 class RawNutritionRecord:
     def __init__(
         self,
-        id: int,
-        name: str,
+        nutrition_id: int,
+        nutrition_name: str,
         group_id: int,
         group_name: str,
         ENERC_KCAL: float,
@@ -12,8 +12,8 @@ class RawNutritionRecord:
         FIB: float,
         NACL_EQ: float,
     ) -> None:
-        self.nutrition_id = id
-        self.nutrition_name = name
+        self.nutrition_nutrition_id = nutrition_id
+        self.nutrition_nutrition_name = nutrition_name
         self.group_id = group_id
         self.group_name = group_name
         self.energy = ENERC_KCAL
