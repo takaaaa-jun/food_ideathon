@@ -16,4 +16,4 @@ def convert_nutrition_data(
         fiber=NutritionItem("fiber", record.fiber),
         salt=NutritionItem("salt", record.salt),
     )
-    return nutrition, group
+    return nutrition
