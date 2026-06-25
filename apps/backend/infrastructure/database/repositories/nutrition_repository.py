@@ -1,46 +1,48 @@
+from mysql.connector.abstracts import MySQLConnectionAbstract
+
 from apps.backend.infrastructure.database.raw_nutrition_record import RawNutritionRecord
-from mysql.connector.abstracts import MyMySQLConnectionAbstract
+
 
 class NutritionRepository:
-    def __init__(
-        self,
-        connection: MySQLConnectionAbstract
-    ) -> None:
+    def __init__(self, connection: MySQLConnectionAbstract) -> None:
         self.connection = connection
-    
-    def find_by_name(
+
+    def find_by_nutrition_name(
         self,
         ingredient_name: str,
     ) -> RawNutritionRecord | None:
         cursor = self.connection.cursor(dictionary=True)
-        
+
         cursor.execute(
             """
             SELECT
                 id,
                 name,
-                group,
                 ENERC_KCAL,
                 PROT,
                 FAT,
                 CHOAVLDF,
                 FIB,
-                NACL_EQ,
+                NACL_EQ
             FROM nutrition
             WHERE name = %s
             LIMIT 1
             """,
             (ingredient_name,),
         )
-        
+
         raw = cursor.fetchone()
-        
-        if raw in None:
+
+        if raw is None:
             return None
-        
+
         return RawNutritionRecord(
-            nutrition_id = raw["id"],
-            nutrition_name = raw["name"],
-            group_id = raw["group"],
-            
+            nutrition_id=raw["id"],
+            nutrition_name=raw["name"],
+            energy=raw["ENERC_KCAL"],
+            protein=raw["protein"],
+            fat=raw["fat"],
+            carbs=raw["carbs"],
+            fib=raw["fib"],
+            salt=raw["salt"],
         )
