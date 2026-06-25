@@ -1,8 +1,7 @@
-from mysql.connector.abstracts import MySQLConnectionAbstract
-
 from apps.backend.infrastructure.database.raw_ingredient_group_record import (
     RawIngredientGroupRecord,
 )
+from mysql.connector.abstracts import MySQLConnectionAbstract
 
 
 class IngredientGroupRepository:
