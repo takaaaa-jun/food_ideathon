@@ -1,4 +1,4 @@
-class RawIngredientUnit:
+class RawIngredientUnitRecord:
     def __init__(
         self,
         ingredient_unit_id: int,

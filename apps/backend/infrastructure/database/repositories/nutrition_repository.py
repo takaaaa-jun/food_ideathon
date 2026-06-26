@@ -7,9 +7,9 @@ class NutritionRepository:
     def __init__(self, connection: MySQLConnectionAbstract) -> None:
         self.connection = connection
 
-    def find_by_nutrition_name(
+    def find_by_food_name(
         self,
-        ingredient_name: str,
+        food_name: str,
     ) -> RawNutritionRecord | None:
         cursor = self.connection.cursor(dictionary=True)
 
@@ -28,7 +28,7 @@ class NutritionRepository:
             WHERE name = %s
             LIMIT 1
             """,
-            (ingredient_name,),
+            (food_name,),
         )
 
         raw = cursor.fetchone()
