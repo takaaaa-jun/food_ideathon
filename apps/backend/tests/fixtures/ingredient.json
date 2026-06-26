@@ -1,0 +1,20 @@
+[
+    {
+        "id": 1,
+        "recipe_id": 1,
+        "name": "材料1",
+        "quantity": "重量1"
+    },
+    {
+        "id": 2,
+        "recipe_id": 1,
+        "name": "材料2",
+        "quantity": "重量2"
+    },
+    {
+        "id": 3,
+        "recipe_id": 1,
+        "name": "材料3",
+        "quantity": "重量3"
+    }
+]

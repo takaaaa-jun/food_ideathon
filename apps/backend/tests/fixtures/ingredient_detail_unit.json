@@ -1,0 +1,29 @@
+[
+    {
+        "id": 1,
+        "ingredient_id": 1,
+        "weigth": "重量の数値部分1",
+        "unit": "単位1",
+        "times": "mlやgに変換するときの倍数(大さじなら15)1",
+        "other": "テキスト分割で余分になった部分1",
+        "normalized_quantity": "最終的な重量(g)1"
+    },
+    {
+        "id": 1,
+        "ingredient_id": 1,
+        "weigth": "重量の数値部分2",
+        "unit": "単位2",
+        "times": "mlやgに変換するときの倍数(大さじなら15)2",
+        "other": "テキスト分割で余分になった部分2",
+        "normalized_quantity": "最終的な重量(g)2"
+    },
+    {
+        "id": 1,
+        "ingredient_id": 1,
+        "weigth": "重量の数値部分3",
+        "unit": "単位3",
+        "times": "mlやgに変換するときの倍数(大さじなら15)3",
+        "other": "テキスト分割で余分になった部分3",
+        "normalized_quantity": "最終的な重量(g)3"
+    }
+]
