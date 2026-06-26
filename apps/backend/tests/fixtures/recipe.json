@@ -1,0 +1,8 @@
+{
+    "id": 1,
+    "attribute": "cookpad",
+    "title": "タイトル",
+    "description": "説明",
+    "cooking_time": "調理時間",
+    "published_at": "レシピ追加日"
+}
