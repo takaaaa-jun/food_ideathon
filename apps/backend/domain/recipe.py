@@ -13,6 +13,7 @@ class RecipePublishedAt:
         self.recipe_published_at_month = recipe_published_at_month
         self.recipe_published_at_day = recipe_published_at_day
 
+
 class RecipeServing:
     def __init__(
         self,
@@ -21,6 +22,7 @@ class RecipeServing:
     ) -> None:
         self.recipe_serving_text = recipe_serving_text
         self.recipe_serving_count = recipe_serving_count
+
 
 class Recipe:
     def __init__(
@@ -32,7 +34,7 @@ class Recipe:
         recipe_ingredient: list[Ingredient],
         resipe_step: list[Step],
         recipe_cooking_time: str | None,
-        recipe_serving: RecipeServing
+        recipe_serving: RecipeServing,
         recipe_published_at: RecipePublishedAt,
     ) -> None:
         self.recipe_id = recipe_id

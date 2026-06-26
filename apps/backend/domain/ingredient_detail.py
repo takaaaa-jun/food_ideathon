@@ -9,7 +9,7 @@ class IngredientDetail:
         ingredient_detail_normalized_name: str,
         ingredient_detail_amount: float,
         ingredient_detail_unit: str,
-        ingredient_detail_normalized_quantity : float,
+        ingredient_detail_normalized_quantity: float,
     ) -> None:
         self.ingreident_detail_id = ingredient_detail_id
         self.ingredient_id = ingredient_id
@@ -19,4 +19,6 @@ class IngredientDetail:
         self.ingredient_detail_normalized_name = ingredient_detail_normalized_name
         self.ingredient_detail_amount = ingredient_detail_amount
         self.ingredient_detail_unit = ingredient_detail_unit
-        self.ingredient_detail_normalized_quantity = ingredient_detail_normalized_quantity
+        self.ingredient_detail_normalized_quantity = (
+            ingredient_detail_normalized_quantity
+        )

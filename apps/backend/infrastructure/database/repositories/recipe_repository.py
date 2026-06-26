@@ -2,16 +2,17 @@ from mysql.connetor.abstracts import MySQLConnectionAbstract
 
 from apps.backend.infrastructure.database.raw_recipe_record import RawRecipeRecord
 
+
 class RecipeRepository:
     def __init__(self, connection: MySQLConnectionAbstract) -> None:
         self.connection = connection
-        
+
     def find_by_recipe_id(
         self,
         recipe_id: int,
     ) -> RawRecipeRecord | None:
         cursor = self.connection.cursor(dictionary=True)
-        
+
         cursor.execute(
             """
             SELECT
@@ -29,12 +30,12 @@ class RecipeRepository:
             """,
             (recipe_id,),
         )
-        
+
         raw = cursor.fetchone()
-        
+
         if raw is None:
             return None
-        
+
         return RawRecipeRecord(
             recipe_id=raw["id"],
             recipe_attribute=raw["attribute"],

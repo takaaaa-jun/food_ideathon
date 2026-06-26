@@ -1,4 +1,6 @@
 from datetime import date
+
+
 class RawRecipeRecord:
     def __init__(
         self,
@@ -18,4 +20,4 @@ class RawRecipeRecord:
         self.recipe_cooking_time = recipe_cooking_time
         self.recipe_serving_text = recipe_serving_text
         self.recipe_serving_count = recipe_serving_count
-        self.recipe_published_at = recipe_published_at        
+        self.recipe_published_at = recipe_published_at

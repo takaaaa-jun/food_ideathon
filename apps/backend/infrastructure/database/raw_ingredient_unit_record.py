@@ -11,4 +11,6 @@ class RawIngredientUnitRecord:
         self.ingredient_id = ingredient_id
         self.ingredient_detail_amount = ingredient_detail_amount
         self.ingredient_detail_unit = ingredient_detail_unit
-        self.ingredient_detail_normalized_quantity = ingredient_detail_normalized_quantity
+        self.ingredient_detail_normalized_quantity = (
+            ingredient_detail_normalized_quantity
+        )
