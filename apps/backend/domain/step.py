@@ -2,9 +2,11 @@ class Step:
     def __init__(
         self,
         step_id: int,
-        order: int,
-        text: str,
+        recipe_id: int,
+        step_position_id: int,
+        step_text: str,
     ) -> None:
         self.step_id = step_id
-        self.order = order
-        self.text = text
+        self.recipe_id = recipe_id
+        self.step_position_id = step_position_id
+        self.step_text = step_text
