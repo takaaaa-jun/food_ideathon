@@ -17,8 +17,8 @@ class RecipePublishedAt:
 class RecipeServing:
     def __init__(
         self,
-        recipe_serving_text: str,
-        recipe_serving_count: int,
+        recipe_serving_text: str | None,
+        recipe_serving_count: int | None,
     ) -> None:
         self.recipe_serving_text = recipe_serving_text
         self.recipe_serving_count = recipe_serving_count
