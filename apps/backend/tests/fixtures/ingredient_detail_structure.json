@@ -1,0 +1,26 @@
+[
+    {
+        "id": 1,
+        "ingredient_id": 1,
+        "name": "抽出した材料名1",
+        "symbol": "記号1",
+        "supplement": "補足情報1",
+        "normalized_name": "表記を成分表の名前に統一した材料名1"
+    },
+    {
+        "id": 2,
+        "ingredient_id": 2,
+        "name": "抽出した材料名2",
+        "symbol": "記号2",
+        "supplement": "補足情報2",
+        "normalized_name": "表記を成分表の名前に統一した材料名2"
+    },
+    {
+        "id": 3,
+        "ingredient_id": 3,
+        "name": "抽出した材料名3",
+        "symbol": "記号3",
+        "supplement": "補足情報3",
+        "normalized_name": "表記を成分表の名前に統一した材料名3"
+    }
+]
