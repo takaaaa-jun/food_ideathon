@@ -11,7 +11,7 @@ class IngredientStructureRepository:
 
     def find_by_ingredient_id(
         self,
-        ingredient_id: str,
+        ingredient_id: int,
     ) -> RawIngredientStructureRecord | None:
         cursor = self.connection.cursor(dictionary=True)
 
@@ -25,7 +25,7 @@ class IngredientStructureRepository:
                 supplement,
                 normalized_name
             FROM ingredient_structured
-            WHERE id = %s
+            WHERE ingredient_id = %s
             LIMIT 1
             """,
             (ingredient_id,),

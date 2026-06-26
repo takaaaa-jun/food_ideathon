@@ -11,7 +11,7 @@ class IngredientDetail:
         ingredient_detail_unit: str,
         ingredient_detail_normalized_quantity: float,
     ) -> None:
-        self.ingreident_detail_id = ingredient_detail_id
+        self.ingredient_detail_id = ingredient_detail_id
         self.ingredient_id = ingredient_id
         self.ingredient_detail_name = ingredient_detail_name
         self.ingredient_detail_symbol = ingredient_detail_symbol

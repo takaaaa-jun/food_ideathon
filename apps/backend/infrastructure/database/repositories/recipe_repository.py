@@ -1,4 +1,4 @@
-from mysql.connetor.abstracts import MySQLConnectionAbstract
+from mysql.connector.abstracts import MySQLConnectionAbstract
 
 from apps.backend.infrastructure.database.raw_recipe_record import RawRecipeRecord
 
@@ -25,7 +25,7 @@ class RecipeRepository:
                 published_at,
                 serving_count
             FROM recipes
-            WHHERE id = %s
+            WHERE id = %s
             LIMIT 1
             """,
             (recipe_id,),
@@ -44,5 +44,5 @@ class RecipeRepository:
             recipe_cooking_time=raw["cooking_time"],
             recipe_serving_text=raw["serving_for"],
             recipe_serving_count=raw["serving_count"],
-            recipe_published_at=raw["publish_count"],
+            recipe_published_at=raw["published_at"],
         )

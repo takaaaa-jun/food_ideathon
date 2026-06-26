@@ -32,7 +32,7 @@ class Recipe:
         recipe_title: str,
         recipe_description: str | None,
         recipe_ingredient: list[Ingredient],
-        resipe_step: list[Step],
+        recipe_step: list[Step],
         recipe_cooking_time: str | None,
         recipe_serving: RecipeServing,
         recipe_published_at: RecipePublishedAt,
@@ -42,7 +42,7 @@ class Recipe:
         self.recipe_title = recipe_title
         self.recipe_description = recipe_description
         self.recipe_ingredient = recipe_ingredient
-        self.resipe_step = resipe_step
+        self.recipe_step = recipe_step
         self.recipe_cooking_time = recipe_cooking_time
         self.recipe_serving = recipe_serving
         self.recipe_published_at = recipe_published_at
